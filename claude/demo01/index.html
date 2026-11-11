@@ -1,0 +1,1589 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>宴会仕込みナビ</title>
+<meta name="description" content="宴会・団体予約の人数とコースを選ぶだけで、食材ごとの仕込み量の目安と、卸への発注締め切りがわかるツール。ブラウザだけで動きます。">
+<meta name="theme-color" content="#1f3a5f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%231f3a5f%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2244%22%20font-size%3D%2234%22%20font-weight%3D%22700%22%20text-anchor%3D%22middle%22%20fill%3D%22%23fff%22%20font-family%3D%22serif%22%3E%E5%AE%B4%3C%2Ftext%3E%3C%2Fsvg%3E">
+<style>
+/* =========================================================
+   デザイントークン（ライト / ダーク）
+   ========================================================= */
+:root{
+  --bg:#f4f1ea;
+  --surface:#ffffff;
+  --surface-2:#faf8f3;
+  --sunken:#ede8de;
+  --ink:#1c2230;
+  --ink-2:#485061;
+  --ink-3:#717988;
+  --line:#e5dfd3;
+  --line-2:#d3cbbb;
+  --brand:#1f3a5f;
+  --brand-hover:#2a4b78;
+  --brand-soft:#e4eaf3;
+  --on-brand:#ffffff;
+  --header-bg:#1f3a5f;
+  --track:#dcd5c6;
+  --accent:#c03d26;
+  --ok:#25724a;      --ok-soft:#e0f0e6;
+  --soon:#935800;    --soon-soft:#fbeed3;
+  --urgent:#bf3a22;  --urgent-soft:#fbe1da;
+  --over:#a3172b;    --over-soft:#f8d8dc;
+  --deliv:#2c6ca0;
+  --prep:#35793f;
+  --c-fish:#2c6ca0; --c-meat:#ad4730; --c-veg:#35793f; --c-dry:#8a661b; --c-liquor:#6651a3;
+  --m-ume:#b0466a; --m-take:#367a4c; --m-matsu:#7c611d; --m-nabe:#bf3a22;
+  --radius:16px;
+  --shadow:0 1px 2px rgba(28,34,48,.05),0 8px 24px rgba(28,34,48,.06);
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","BIZ UDPGothic","Yu Gothic UI","YuGothic","Meiryo",system-ui,-apple-system,sans-serif;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP","BIZ UDPMincho",serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#121519;
+    --surface:#1b1f26;
+    --surface-2:#21262e;
+    --sunken:#14181e;
+    --ink:#eceff3;
+    --ink-2:#c3c8d1;
+    --ink-3:#959caa;
+    --line:#2c323c;
+    --line-2:#3b4250;
+    --brand:#8fb3e6;
+    --brand-hover:#a9c5ee;
+    --brand-soft:#23324a;
+    --on-brand:#0e1520;
+    --header-bg:#172a45;
+    --track:#363d49;
+    --accent:#ff8a70;
+    --ok:#6cc792;      --ok-soft:#1c3326;
+    --soon:#f0b35a;    --soon-soft:#382c17;
+    --urgent:#ff8a70;  --urgent-soft:#3b221c;
+    --over:#ff7d8c;    --over-soft:#3d1c23;
+    --deliv:#7fb2e0;
+    --prep:#7cc488;
+    --c-fish:#3a7bb1; --c-meat:#b9573a; --c-veg:#43884c; --c-dry:#977425; --c-liquor:#7462b4;
+    --m-ume:#b9547a; --m-take:#3f8656; --m-matsu:#8f7128; --m-nabe:#c4472f;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.22);
+    color-scheme:dark;
+  }
+}
+
+/* =========================================================
+   ベース
+   ========================================================= */
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+h1,h2,h3{line-height:1.35}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- ヘッダー ---------- */
+.app-header{background:var(--header-bg);color:#fff;padding:14px 16px 16px;padding-top:max(14px,env(safe-area-inset-top))}
+.app-header .inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-mark{width:44px;height:44px;border-radius:12px;background:#fff;color:#1f3a5f;display:grid;place-items:center;font-family:var(--serif);font-weight:700;font-size:26px;flex:none}
+.brand h1{margin:0;font-family:var(--serif);font-size:21px;font-weight:700;letter-spacing:.08em}
+.brand p{margin:2px 0 0;font-size:12px;color:rgba(255,255,255,.84);line-height:1.45}
+.hdr-btn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.08);color:#fff;font-weight:700;font-size:14px;white-space:nowrap;flex:none}
+.hdr-btn:hover{background:rgba(255,255,255,.16)}
+.hdr-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media (max-width:440px){.hdr-btn .lbl{display:none}.hdr-btn{padding:0 12px}.brand p{font-size:11.5px}}
+
+/* ---------- レイアウト ---------- */
+.layout{max-width:1180px;margin:0 auto;padding:16px;display:grid;gap:16px}
+@media (min-width:960px){
+  .layout{grid-template-columns:minmax(340px,400px) minmax(0,1fr);padding:24px 24px 32px;gap:24px;align-items:start}
+  .inputs{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;overscroll-behavior:contain}
+}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 6px}
+.card-head h2{margin:0;font-size:17px}
+.today{font-size:13px;color:var(--ink-3);white-space:nowrap}
+
+/* ---------- 入力フィールド ---------- */
+.field{padding:14px 16px 16px;border-top:1px solid var(--line)}
+.card-head + .field{border-top:0}
+.field-label{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px;font-weight:700;font-size:15px}
+.field-label .hint{font-weight:500;font-size:12.5px;color:var(--ink-3);text-align:right}
+.field-label output{font-size:16px;font-weight:800;color:var(--brand);font-variant-numeric:tabular-nums}
+.sub-hint{margin:8px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.date-row{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:8px}
+.ctl{width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);font-size:16px}
+.ctl:focus{outline:2px solid var(--brand);outline-offset:1px}
+select.ctl{-webkit-appearance:none;appearance:none;padding-right:30px;background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 18px) 52%,calc(100% - 13px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chip{min-height:40px;padding:0 12px;border-radius:99px;border:1px solid var(--line-2);background:var(--surface);font-size:13.5px;font-weight:700;color:var(--ink-2);touch-action:manipulation}
+.chip small{font-weight:500;opacity:.8;margin-left:4px}
+.chip:hover{border-color:var(--brand);color:var(--brand)}
+.chip.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.chip:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+
+/* 人数ステッパー */
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.step-btn{width:56px;height:56px;border-radius:50%;border:1px solid var(--line-2);background:var(--surface);font-size:28px;line-height:1;color:var(--brand);display:grid;place-items:center;flex:none;touch-action:manipulation}
+.step-btn:hover{border-color:var(--brand)}
+.step-btn:active{transform:scale(.95);background:var(--brand-soft)}
+.step-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.people-box{display:flex;align-items:baseline;justify-content:center;gap:4px;flex:1;min-width:0}
+.people-box input{width:3.3ch;font-size:44px;font-weight:800;line-height:1.15;text-align:center;border:0;border-bottom:2px dashed var(--line-2);background:transparent;font-variant-numeric:tabular-nums;color:var(--ink);padding:0;-moz-appearance:textfield;appearance:textfield;border-radius:0}
+.people-box input::-webkit-outer-spin-button,.people-box input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.people-box input:focus{outline:none;border-bottom-color:var(--brand)}
+.people-box span{font-size:18px;font-weight:700;color:var(--ink-2)}
+
+/* スライダー */
+input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:36px;background:transparent;margin:10px 0 0;--fill:50%}
+input[type=range]:focus{outline:none}
+input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:linear-gradient(to right,var(--brand) 0,var(--brand) var(--fill),var(--track) var(--fill),var(--track) 100%)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;margin-top:-11px;border-radius:50%;background:#fff;border:3px solid var(--brand);box-shadow:0 2px 6px rgba(0,0,0,.22)}
+input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 5px var(--brand-soft),0 2px 6px rgba(0,0,0,.22)}
+input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:var(--track)}
+input[type=range]::-moz-range-progress{height:8px;border-radius:99px;background:var(--brand)}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid var(--brand);box-shadow:0 2px 6px rgba(0,0,0,.22)}
+.range-scale{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);padding:0 2px;font-variant-numeric:tabular-nums}
+
+/* コースカード */
+.course-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.course{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"mark price" "name name" "catch catch";column-gap:10px;align-items:center;padding:12px;border:1.5px solid var(--line-2);border-radius:14px;background:var(--surface);cursor:pointer;transition:border-color .15s,background-color .15s;-webkit-tap-highlight-color:transparent}
+.course:hover{border-color:var(--brand)}
+.course input{position:absolute;opacity:0;pointer-events:none}
+.course-mark{grid-area:mark;width:42px;height:42px;border-radius:50%;background:var(--mc);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-size:22px;font-weight:700}
+.course-price{grid-area:price;display:flex;flex-direction:column;font-size:16px;font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap}
+.course-price small{font-size:12px;font-weight:600;color:var(--ink-3)}
+.course-name{grid-area:name;margin-top:8px;font-weight:800;font-size:15px;line-height:1.35}
+.course-name .nb{display:inline-block;white-space:nowrap}
+.course-catch{grid-area:catch;margin-top:2px;font-size:12px;color:var(--ink-3);line-height:1.45}
+.course-tick{position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:none;place-items:center;box-shadow:0 0 0 3px var(--surface)}
+@media (max-width:359px){.course{padding:10px;column-gap:8px}.course-mark{width:36px;height:36px;font-size:19px}.course-price{font-size:15px}}
+.course-tick svg{width:14px;height:14px;stroke-width:3}
+.course.is-on{border-color:var(--brand);background:var(--brand-soft)}
+.course.is-on .course-tick{display:grid}
+.course:focus-within{outline:2px solid var(--brand);outline-offset:2px}
+@supports selector(:has(*)){
+  .course:focus-within{outline:none}
+  .course:has(input:focus-visible){outline:2px solid var(--brand);outline-offset:2px}
+}
+.menu{margin-top:12px;padding:10px 14px 12px;background:var(--surface-2);border:1px dashed var(--line-2);border-radius:12px}
+.menu-title{margin:0 0 4px;font-size:13px;font-weight:700;color:var(--ink-2)}
+.menu ol{margin:0;padding-left:1.5em;font-size:13px;color:var(--ink-2);columns:2;column-gap:18px}
+.menu li{break-inside:avoid;padding:1px 0}
+@media (max-width:360px){.menu ol{columns:1}}
+
+/* セグメント */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;background:var(--sunken);border-radius:13px}
+.seg label{position:relative;display:block}
+.seg input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.seg span{display:flex;align-items:center;justify-content:center;min-height:42px;padding:0 4px;border-radius:10px;font-weight:700;font-size:14px;color:var(--ink-2);text-align:center;transition:background-color .15s,color .15s}
+.seg input:checked + span{background:var(--surface);color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.seg input:focus-visible + span{outline:2px solid var(--brand);outline-offset:1px}
+.inputs-foot{padding:12px 16px 16px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+
+/* ---------- ボタン ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font-weight:700;font-size:14px;white-space:nowrap;text-decoration:none;touch-action:manipulation}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.btn-primary:hover{background:var(--brand-hover);border-color:var(--brand-hover);color:var(--on-brand)}
+.btn-ghost{background:transparent}
+.btn-check.on{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+
+/* ---------- 結果：サマリー ---------- */
+.results{display:grid;gap:16px;min-width:0;scroll-margin-top:12px}
+.summary{padding:16px}
+.sum-date{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:14px;font-weight:700;color:var(--ink-2)}
+.pill{display:inline-block;padding:1px 10px;border-radius:99px;background:var(--brand-soft);color:var(--brand);font-size:12.5px;font-weight:800}
+.sum-main{margin-top:4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;font-size:15px;color:var(--ink-2)}
+.sum-main b{font-size:26px;color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
+.warn{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:var(--over-soft);color:var(--over);font-weight:700;font-size:13.5px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+.warn svg{margin-top:2px}
+.st-ok{--stc:var(--ok);--sts:var(--ok-soft)}
+.st-soon{--stc:var(--soon);--sts:var(--soon-soft)}
+.st-urgent{--stc:var(--urgent);--sts:var(--urgent-soft)}
+.st-over{--stc:var(--over);--sts:var(--over-soft)}
+.st-done{--stc:var(--ink-3);--sts:var(--sunken)}
+.next{margin-top:14px;width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);border-left:6px solid var(--stc);background:var(--surface-2);color:var(--ink)}
+button.next:hover{border-color:var(--brand);border-left-color:var(--stc)}
+button.next:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.next-label{grid-column:1/-1;font-size:12px;font-weight:700;color:var(--ink-3)}
+.next-sup{display:flex;align-items:center;gap:8px;font-weight:800;font-size:16px;min-width:0}
+.next-when{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.next-when b{font-size:20px;font-variant-numeric:tabular-nums}
+.cd{font-weight:800;color:var(--stc);font-variant-numeric:tabular-nums}
+.stats{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{padding:10px 6px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line);text-align:center}
+.stat b{display:block;font-size:22px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat b small{font-size:14px;color:var(--ink-3);font-weight:700}
+.stat span{font-size:11.5px;color:var(--ink-3)}
+
+/* スタンプ・バッジ */
+.stamp{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:7px;color:#fff;font-family:var(--serif);font-weight:700;font-size:15px;line-height:1;flex:none}
+.stamp.sm{width:20px;height:20px;font-size:12px;border-radius:5px}
+.c-fish{background:var(--c-fish)} .c-meat{background:var(--c-meat)} .c-veg{background:var(--c-veg)} .c-dry{background:var(--c-dry)} .c-liquor{background:var(--c-liquor)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap;background:var(--sts);color:var(--stc)}
+.badge svg{width:14px;height:14px;stroke-width:3}
+.badge.st-over{background:var(--over);color:#fff}
+@media (prefers-color-scheme:dark){.badge.st-over{background:#c7334a}}
+
+/* ---------- タブ ---------- */
+.tabs-card{overflow:hidden}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line);background:var(--surface-2)}
+.tab{position:relative;min-height:52px;border:0;background:transparent;font-weight:800;font-size:15px;color:var(--ink-3);display:flex;align-items:center;justify-content:center;gap:6px;padding:0 4px;-webkit-tap-highlight-color:transparent}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{color:var(--brand);background:var(--surface)}
+.tab[aria-selected=true]::after{content:"";position:absolute;left:14%;right:14%;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--brand)}
+.tab:focus-visible{outline:2px solid var(--brand);outline-offset:-4px}
+.tab-count{min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--sunken);color:var(--ink-2);font-size:12px;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+.tab-count.hot{background:var(--urgent);color:#fff}
+.panel{padding:16px}
+.panel-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:10px 16px;margin-bottom:4px}
+.panel-title{margin:0;font-size:17px}
+.formula{margin:4px 0 0;font-size:13px;color:var(--ink-3)}
+.formula b{color:var(--ink);margin:0 2px}
+.panel-actions{display:flex;flex-wrap:wrap;gap:8px}
+.note{margin:14px 0 0;font-size:12.5px;color:var(--ink-3);line-height:1.6}
+
+/* 仕込み量リスト */
+.cat{margin-top:16px}
+.cat-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin:0;padding:6px 0 8px;font-size:15px;border-bottom:1px solid var(--line-2)}
+.cat-meta{margin-left:auto;font-size:12px;font-weight:600;color:var(--ink-3)}
+.ings{list-style:none;margin:0;padding:0}
+.ing{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ing-name{font-weight:700}
+.ing-amt{font-size:20px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap}
+.ing-uses{font-size:12.5px;color:var(--ink-2)}
+.ing-per{font-size:12px;color:var(--ink-3);text-align:right;white-space:nowrap}
+.ing-pack{grid-column:1/-1;font-size:12.5px;color:var(--ink-3)}
+.ing-pack b{color:var(--ink-2)}
+
+/* 発注カード */
+.orders{display:grid;gap:12px;margin-top:12px}
+.order{border:1px solid var(--line);border-left:6px solid var(--stc);border-radius:14px;padding:14px;background:var(--surface)}
+.order.st-done .order-when,.order.st-done .order-items{opacity:.6}
+.order-head{display:flex;align-items:center;gap:10px}
+.order-title{flex:1;min-width:0}
+.order-title h3{margin:0;font-size:16px;overflow-wrap:anywhere}
+.order-title span{font-size:12px;color:var(--ink-3)}
+.order-when{margin-top:10px;display:grid;gap:2px}
+.ow-row{display:flex;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.ow-k{flex:none;width:2.6em;font-size:12px;font-weight:700;color:var(--ink-3)}
+.ow-v{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.ow-v b{font-size:18px;font-variant-numeric:tabular-nums}
+.order-note{margin:8px 0 0;font-size:12.5px;color:var(--soon);display:flex;gap:6px;align-items:flex-start;line-height:1.5}
+.order-note svg{width:16px;height:16px;margin-top:2px}
+.order-alert{margin:10px 0 0;padding:8px 10px;border-radius:10px;background:var(--over-soft);color:var(--over);font-size:13px;font-weight:700;display:flex;gap:6px;align-items:flex-start}
+.order-alert svg{margin-top:2px;width:16px;height:16px}
+.order-items{list-style:none;margin:10px 0 0;padding:8px 12px;background:var(--surface-2);border-radius:10px}
+.order-items li{display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;padding:5px 0;font-size:14px;border-bottom:1px dashed var(--line)}
+.order-items li:last-child{border-bottom:0}
+.oi-name small{margin-left:6px;font-size:11.5px;color:var(--ink-3);white-space:nowrap}
+.oi-qty{margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+.oi-qty b{font-size:15px}
+.order-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.order-actions .btn{flex:1 1 auto}
+.rule-link{margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:8px 0 0;border:0;border-top:1px dashed var(--line-2);background:none;font-size:12px;color:var(--ink-3);text-align:left;line-height:1.5}
+.rule-link span:last-child{flex:none;color:var(--brand);font-weight:700}
+.rule-link:hover span:last-child{text-decoration:underline}
+.rule-link:focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:4px}
+
+/* 段取り表（タイムライン） */
+.legend{display:flex;gap:6px 12px;flex-wrap:wrap;font-size:12px;color:var(--ink-3);align-self:center}
+.lg::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;background:var(--dot);vertical-align:-1px}
+.lg-deadline{--dot:var(--urgent)} .lg-delivery{--dot:var(--deliv)} .lg-prep{--dot:var(--prep)}
+.tl{list-style:none;margin:12px 0 0;padding:0}
+.tl-date{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:10px 0 4px;font-weight:800;font-size:15px}
+.tl-date .rel{font-size:12px;font-weight:700;color:var(--ink-3)}
+.tag{font-size:11px;font-weight:800;padding:1px 8px;border-radius:99px;background:var(--brand);color:var(--on-brand)}
+.tag.main{background:var(--accent);color:#fff}
+.tl-items{list-style:none;margin:0 0 0 7px;padding:0 0 4px 16px;border-left:2px solid var(--line-2)}
+.tl-item{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px 0}
+.tl-item::before{content:"";position:absolute;left:-24px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--dot,var(--ink-3));box-shadow:0 0 0 3px var(--surface)}
+.tl-time{font-size:13px;font-weight:800;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap}
+.tl-kind{display:block;font-size:11.5px;font-weight:800;color:var(--dot);line-height:1.4}
+.tl-text{font-size:14px;line-height:1.55}
+.tl-text .amt{font-weight:800;margin:0 .15em;color:var(--ink)}
+.tl-sups{display:flex;flex-wrap:wrap;gap:4px 12px}
+.tl-sups span{display:inline-flex;align-items:center;gap:5px}
+.k-deadline{--dot:var(--stc)} .k-delivery{--dot:var(--deliv)} .k-prep{--dot:var(--prep)} .k-start{--dot:var(--accent)}
+.k-start .tl-text{font-weight:800}
+.tl-item.past{opacity:.5}
+.tl-item.done .tl-text{text-decoration:line-through;color:var(--ink-3)}
+.tl-item .badge{margin-top:4px}
+.tl-check{width:40px;height:40px;border-radius:50%;border:2px solid var(--line-2);background:var(--surface);display:grid;place-items:center;color:var(--line-2);touch-action:manipulation}
+.tl-check:hover{border-color:var(--ok);color:var(--ok)}
+.tl-check[aria-pressed=true]{background:var(--ok);border-color:var(--ok);color:#fff}
+.tl-check svg{width:18px;height:18px;stroke-width:3}
+.tl-check:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.tl-warn{display:flex;gap:5px;align-items:flex-start;margin-top:4px;font-size:12px;color:var(--urgent);font-weight:700;line-height:1.45}
+.tl-warn svg{width:14px;height:14px;margin-top:2px}
+.tl-now{position:relative;display:flex;align-items:center;gap:8px;margin:2px 0;font-size:12px;font-weight:800;color:var(--accent)}
+.tl-now::before{content:"";position:absolute;left:-23px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--urgent-soft)}
+.tl-now::after{content:"";flex:1;height:0;border-top:2px dashed var(--accent);opacity:.6}
+
+/* ---------- フッター ---------- */
+.app-footer{max-width:1180px;margin:0 auto;padding:4px 16px 32px;font-size:12px;color:var(--ink-3);line-height:1.7}
+.app-footer p{margin:2px 0}
+@media (min-width:960px){.app-footer{padding:0 24px 40px}}
+
+/* ---------- モバイル下部バー ---------- */
+.mobile-bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.08);transform:translateY(115%);transition:transform .25s ease}
+.mobile-bar.show{transform:none}
+.mb-text{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.4}
+.mb-text b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-text span{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mb-text span.hot{color:var(--urgent);font-weight:700}
+@media (min-width:960px){.mobile-bar{display:none}}
+@media (max-width:959px){body{padding-bottom:76px}}
+
+/* ---------- トースト ---------- */
+.toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom));z-index:40;transform:translate(-50%,16px);opacity:0;pointer-events:none;max-width:calc(100% - 32px);padding:10px 18px;border-radius:99px;background:var(--ink);color:var(--bg);font-weight:700;font-size:14px;transition:opacity .2s,transform .2s;box-shadow:0 8px 24px rgba(0,0,0,.25);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (min-width:960px){.toast{bottom:32px}}
+
+/* ---------- ダイアログ ---------- */
+dialog{padding:0;border:0;border-radius:20px;width:min(680px,calc(100% - 24px));max-height:calc(100% - 24px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(12,16,24,.55)}
+.dlg-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 12px 16px;border-bottom:1px solid var(--line)}
+.dlg-head h2{margin:0;font-size:17px}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);display:grid;place-items:center;flex:none}
+.icon-btn:hover{border-color:var(--brand);color:var(--brand)}
+.dlg-body{padding:16px;overflow:auto;flex:1;overscroll-behavior:contain}
+.dlg-foot{display:flex;justify-content:space-between;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 20px 20px}
+.dlg-lead{margin:0 0 14px;font-size:13.5px;color:var(--ink-2)}
+.tf{display:grid;gap:4px;font-size:12.5px;font-weight:700;color:var(--ink-2);min-width:0}
+.tf .ctl{min-height:44px;font-weight:500;color:var(--ink)}
+.sup-form{margin:14px 0 0;padding:10px 14px 14px;border:1px solid var(--line);border-radius:14px;min-width:0}
+.sup-form legend{display:flex;align-items:center;gap:8px;padding:0 6px;font-weight:800;font-size:15px}
+.sf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sf-grid .full{grid-column:1/-1}
+@media (min-width:560px){.sf-grid{grid-template-columns:1.25fr 1.25fr .9fr}}
+.dows{display:flex;flex-wrap:wrap;gap:6px}
+.dow{width:42px;height:42px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);font-weight:800;font-size:14px;color:var(--ink-2);touch-action:manipulation}
+.dow:hover{border-color:var(--brand)}
+.dow[aria-pressed=true]{background:var(--urgent-soft);border-color:var(--urgent);color:var(--urgent)}
+.dow:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.sf-preview{margin:10px 0 0;font-size:12.5px;color:var(--ink-3)}
+.sf-preview b{color:var(--ink)}
+.sup-form.flash{animation:flash 1.4s ease}
+@keyframes flash{0%,100%{box-shadow:0 0 0 0 transparent}25%,60%{box-shadow:0 0 0 4px var(--brand-soft);border-color:var(--brand)}}
+#textDlg textarea{width:100%;min-height:260px;padding:12px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);font-size:14px;line-height:1.6;resize:vertical}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+
+/* ---------- 印刷 ---------- */
+@media print{
+  :root{--bg:#fff;--surface:#fff;--surface-2:#fff;--sunken:#f2f2f2;--ink:#000;--ink-2:#222;--ink-3:#555;--line:#ccc;--line-2:#bbb;--shadow:none;color-scheme:light}
+  body{padding:0;font-size:12px}
+  .app-header,.inputs,.tabs,.mobile-bar,.toast,dialog,.panel-actions,.order-actions,.rule-link,.tl-check,.no-print{display:none!important}
+  .layout{display:block;padding:0;max-width:none}
+  .results{gap:8px}
+  .card{box-shadow:none;border:0}
+  [role=tabpanel][hidden]{display:block!important}
+  .panel{padding:8px 0}
+  .order,.cat,.tl-day{break-inside:avoid}
+  button.next{border:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">宴</div>
+      <div>
+        <h1>宴会仕込みナビ</h1>
+        <p>人数とコースを選ぶだけで、仕込み量と卸の発注締切がわかります</p>
+      </div>
+    </div>
+    <button type="button" class="hdr-btn" id="openSettings" aria-haspopup="dialog" aria-label="締切ルールの設定">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span class="lbl">締切ルール</span>
+    </button>
+  </div>
+</header>
+
+<noscript><p style="max-width:720px;margin:16px auto;padding:0 16px">このページは JavaScript を有効にしてご利用ください。</p></noscript>
+
+<main class="layout">
+  <!-- ===================== 入力 ===================== -->
+  <section class="card inputs" aria-labelledby="inputsTitle">
+    <div class="card-head">
+      <h2 id="inputsTitle">予約の内容</h2>
+      <span class="today" id="todayLabel"></span>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label for="dateInput">宴会日・開始時刻</label><span class="hint" id="dateHint"></span></div>
+      <div class="date-row">
+        <input class="ctl" type="date" id="dateInput" required>
+        <select class="ctl" id="timeInput" aria-label="開始時刻"></select>
+      </div>
+      <div class="chips" id="dateChips" role="group" aria-label="日付のショートカット"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label for="peopleInput">人数</label><span class="hint">＋−・スライダー・直接入力</span></div>
+      <div class="stepper">
+        <button type="button" class="step-btn" data-step="-1" aria-label="1名減らす">−</button>
+        <div class="people-box">
+          <input type="number" id="peopleInput" inputmode="numeric" min="1" max="300" step="1" aria-describedby="peopleHelp">
+          <span>名</span>
+        </div>
+        <button type="button" class="step-btn" data-step="1" aria-label="1名増やす">＋</button>
+      </div>
+      <input type="range" id="peopleRange" min="2" max="120" step="1" aria-label="人数（スライダー）">
+      <div class="range-scale" aria-hidden="true"><span>2名</span><span>60名</span><span>120名</span></div>
+      <div class="chips" id="peopleChips" role="group" aria-label="よく使う人数"></div>
+      <p class="sub-hint" id="peopleHelp">直接入力なら300名まで対応します。</p>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span id="courseLabel">コース</span><span class="hint" id="courseHint"></span></div>
+      <div class="course-grid" role="radiogroup" aria-labelledby="courseLabel" id="courseGrid"></div>
+      <div class="menu">
+        <p class="menu-title" id="menuTitle"></p>
+        <ol id="courseDishes"></ol>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span id="drinkLabel">飲み放題</span><span class="hint">ありの場合は酒類も計算</span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="drinkLabel" id="drinkSeg"></div>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><span id="appLabel">食べる量</span><span class="hint" id="appHint"></span></div>
+      <div class="seg" role="radiogroup" aria-labelledby="appLabel" id="appSeg"></div>
+      <p class="sub-hint">大皿料理・鍋・〆の量に反映します（刺身など1人盛りの料理は固定）。</p>
+    </div>
+
+    <div class="field">
+      <div class="field-label"><label for="bufferRange">予備（ロス・急な人数増に備える）</label><output id="bufferOut" for="bufferRange"></output></div>
+      <input type="range" id="bufferRange" min="0" max="20" step="1">
+      <div class="range-scale" aria-hidden="true"><span>0%</span><span>10%</span><span>20%</span></div>
+    </div>
+
+    <div class="inputs-foot">
+      <button type="button" class="btn btn-ghost" id="resetBtn">入力をリセット</button>
+    </div>
+  </section>
+
+  <!-- ===================== 結果 ===================== -->
+  <section class="results" id="results" aria-label="計算結果">
+    <div class="card summary" id="summary"></div>
+
+    <div class="card tabs-card">
+      <div class="tabs" role="tablist" aria-label="結果の表示切り替え">
+        <button type="button" class="tab" role="tab" id="tab-prep" data-tab="prep" aria-controls="panel-prep" aria-selected="true">仕込み量</button>
+        <button type="button" class="tab" role="tab" id="tab-order" data-tab="order" aria-controls="panel-order" aria-selected="false" tabindex="-1">発注締切<span class="tab-count" id="orderCount"></span></button>
+        <button type="button" class="tab" role="tab" id="tab-plan" data-tab="plan" aria-controls="panel-plan" aria-selected="false" tabindex="-1">段取り表</button>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-prep" aria-labelledby="tab-prep" tabindex="0"></div>
+      <div class="panel" role="tabpanel" id="panel-order" aria-labelledby="tab-order" tabindex="0" hidden></div>
+      <div class="panel" role="tabpanel" id="panel-plan" aria-labelledby="tab-plan" tabindex="0" hidden></div>
+    </div>
+  </section>
+</main>
+
+<footer class="app-footer">
+  <p>※ 分量は一般的なレシピをもとにした目安です。盛り付けや仕入れ規格に合わせて調整してください。</p>
+  <p>※ 祝日は2026〜2027年に対応（年末年始は12/31〜1/3を祝日扱い）。市場の臨時休市などは各取引先にご確認ください。</p>
+  <p class="no-print">入力内容はこの端末のブラウザ内だけに保存され、外部には送信されません。</p>
+</footer>
+
+<div class="mobile-bar" id="mobileBar">
+  <div class="mb-text"><b id="mbMain"></b><span id="mbSub"></span></div>
+  <button type="button" class="btn btn-primary" id="mbGo">結果を見る</button>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 締切ルールの設定 -->
+<dialog id="settingsDlg" aria-labelledby="settingsTitle">
+  <div class="dlg-head">
+    <h2 id="settingsTitle">締切ルールの設定</h2>
+    <button type="button" class="icon-btn" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <p class="dlg-lead">取引先ごとの「納品日」「発注締切」「休業日」を、お店の実際の取引条件に合わせて変更できます。変更はすぐに計算へ反映されます。</p>
+    <label class="tf">お店の名前（発注メモの署名に使います）
+      <input class="ctl" type="text" id="shopName" maxlength="40" placeholder="例：居酒屋 さくら" autocomplete="organization">
+    </label>
+    <div id="supplierForms"></div>
+  </div>
+  <div class="dlg-foot">
+    <button type="button" class="btn btn-ghost" id="resetRules">初期値に戻す</button>
+    <button type="button" class="btn btn-primary" data-close>完了</button>
+  </div>
+</dialog>
+
+<!-- コピーできなかったときの表示用 -->
+<dialog id="textDlg" aria-labelledby="textDlgTitle">
+  <div class="dlg-head">
+    <h2 id="textDlgTitle">テキスト</h2>
+    <button type="button" class="icon-btn" data-close aria-label="閉じる"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="dlg-body">
+    <p class="dlg-lead">自動でコピーできませんでした。下の文章を長押し（または選択）してコピーしてください。</p>
+    <textarea id="textDlgArea" readonly></textarea>
+  </div>
+  <div class="dlg-foot" style="justify-content:flex-end">
+    <button type="button" class="btn btn-primary" data-close>閉じる</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   マスターデータ
+   ========================================================= */
+
+// 仕入れカテゴリ（＝発注先の卸）
+const CATS = {
+  fish:   { mark:'魚', label:'鮮魚',           cls:'c-fish' },
+  meat:   { mark:'肉', label:'精肉',           cls:'c-meat' },
+  veg:    { mark:'菜', label:'青果',           cls:'c-veg' },
+  dry:    { mark:'乾', label:'米・乾物・冷凍', cls:'c-dry' },
+  liquor: { mark:'酒', label:'酒類・ドリンク', cls:'c-liquor' },
+};
+const CAT_ORDER = ['fish','meat','veg','dry','liquor'];
+
+// 食材マスター（unit: 1人前の単位 / pack: 発注単位の量 / packLabel: 発注単位の表記）
+const ING = {
+  maguro:     { name:'マグロ（赤身サク）',         cat:'fish', unit:'g',  pack:500,   packLabel:'サク約500g' },
+  salmon:     { name:'サーモン（刺身用フィレ）',   cat:'fish', unit:'g',  pack:1000,  packLabel:'フィレ約1kg' },
+  buri:       { name:'ブリ（サク）',               cat:'fish', unit:'g',  pack:500,   packLabel:'サク約500g' },
+  tai:        { name:'真鯛（フィレ）',             cat:'fish', unit:'g',  pack:400,   packLabel:'片身約400g' },
+  hotate:     { name:'ホタテ貝柱（刺身用）',       cat:'fish', unit:'g',  pack:1000,  packLabel:'1kg（約30粒）' },
+  ebi:        { name:'エビ（ブラックタイガー）',   cat:'fish', unit:'尾', pack:30,    packLabel:'1箱30尾' },
+  tara:       { name:'真鱈（切り身）',             cat:'fish', unit:'g',  pack:1000,  packLabel:'1kg' },
+
+  momo:       { name:'鶏もも肉',                   cat:'meat', unit:'g',  pack:2000,  packLabel:'2kg袋' },
+  hikiniku:   { name:'鶏ひき肉',                   cat:'meat', unit:'g',  pack:1000,  packLabel:'1kg袋' },
+  gyusuji:    { name:'牛すじ',                     cat:'meat', unit:'g',  pack:1000,  packLabel:'1kg袋' },
+  wagyu:      { name:'黒毛和牛ロース',             cat:'meat', unit:'g',  pack:500,   packLabel:'ブロック約500g' },
+
+  daikon:     { name:'大根',                       cat:'veg',  unit:'g',  pack:1000,  packLabel:'1本（約1kg）' },
+  mizuna:     { name:'水菜',                       cat:'veg',  unit:'g',  pack:200,   packLabel:'1袋200g' },
+  minitomato: { name:'ミニトマト',                 cat:'veg',  unit:'g',  pack:200,   packLabel:'1パック200g' },
+  cabbage:    { name:'キャベツ',                   cat:'veg',  unit:'g',  pack:1200,  packLabel:'1玉（約1.2kg）' },
+  negi:       { name:'長ねぎ',                     cat:'veg',  unit:'g',  pack:300,   packLabel:'1束3本（約300g）' },
+  hakusai:    { name:'白菜',                       cat:'veg',  unit:'g',  pack:2500,  packLabel:'1玉（約2.5kg）' },
+  shungiku:   { name:'春菊',                       cat:'veg',  unit:'g',  pack:200,   packLabel:'1束（約200g）' },
+  shiitake:   { name:'生しいたけ',                 cat:'veg',  unit:'g',  pack:100,   packLabel:'1パック100g' },
+  enoki:      { name:'えのき',                     cat:'veg',  unit:'g',  pack:200,   packLabel:'1袋200g' },
+  ninjin:     { name:'人参',                       cat:'veg',  unit:'g',  pack:150,   packLabel:'1本（約150g）' },
+  kabocha:    { name:'かぼちゃ',                   cat:'veg',  unit:'g',  pack:1500,  packLabel:'1玉（約1.5kg）' },
+  tamanegi:   { name:'玉ねぎ',                     cat:'veg',  unit:'g',  pack:1000,  packLabel:'1kg（約5玉）' },
+  shishito:   { name:'ししとう',                   cat:'veg',  unit:'本', pack:30,    packLabel:'1袋（約30本）' },
+  ooba:       { name:'大葉',                       cat:'veg',  unit:'枚', pack:10,    packLabel:'1束10枚' },
+  lemon:      { name:'レモン',                     cat:'veg',  unit:'個', pack:1,     packLabel:'1個' },
+  kaki:       { name:'柿',                         cat:'veg',  unit:'個', pack:1,     packLabel:'1個' },
+
+  kome:       { name:'米',                         cat:'dry',  unit:'g',  pack:5000,  packLabel:'5kg袋' },
+  edamame:    { name:'冷凍枝豆',                   cat:'dry',  unit:'g',  pack:500,   packLabel:'500g袋' },
+  karaageko:  { name:'唐揚げ粉',                   cat:'dry',  unit:'g',  pack:1000,  packLabel:'1kg袋' },
+  tempurako:  { name:'天ぷら粉',                   cat:'dry',  unit:'g',  pack:1000,  packLabel:'1kg袋' },
+  tofu:       { name:'木綿豆腐',                   cat:'dry',  unit:'丁', pack:1,     packLabel:'1丁（約300g）' },
+  tamago:     { name:'卵',                         cat:'dry',  unit:'個', pack:10,    packLabel:'1パック10個' },
+  kombu:      { name:'だし昆布',                   cat:'dry',  unit:'g',  pack:100,   packLabel:'100g袋' },
+  katsuo:     { name:'かつお節（厚削り）',         cat:'dry',  unit:'g',  pack:500,   packLabel:'500g袋' },
+  sorbet:     { name:'柚子シャーベット',           cat:'dry',  unit:'ml', pack:2000,  packLabel:'2L容器' },
+  matcha:     { name:'抹茶アイス',                 cat:'dry',  unit:'ml', pack:2000,  packLabel:'2L容器' },
+
+  beer:       { name:'生ビール',                   cat:'liquor', unit:'ml', pack:10000, packLabel:'10L樽' },
+  whisky:     { name:'ウイスキー（ハイボール用）', cat:'liquor', unit:'ml', pack:4000,  packLabel:'4Lペット' },
+  shochu:     { name:'甲類焼酎（サワー用）',       cat:'liquor', unit:'ml', pack:4000,  packLabel:'4Lペット' },
+  sake:       { name:'日本酒',                     cat:'liquor', unit:'ml', pack:1800,  packLabel:'一升瓶1.8L' },
+  soda:       { name:'炭酸水',                     cat:'liquor', unit:'ml', pack:15000, packLabel:'1L×15本' },
+  soft:       { name:'ソフトドリンク（ウーロン茶など）', cat:'liquor', unit:'ml', pack:12000, packLabel:'2L×6本' },
+};
+
+// 仕込み手順の書き方
+//   d: 宴会日からの日数（-1 = 前日） / at: その日の時刻 / rel: 開始時刻からの分（-120 = 2時間前）
+//   {食材ID} … その料理で使う量 / {n:3} … 1人3個などの個数 / {people} … 人数 / {plates} … 4人で1皿の皿数
+const P_TSUMA = { d:0, rel:-240, t:'刺身のツマ用に大根{daikon}をかつらむきして水にさらし、大葉{ooba}を洗う' };
+const D_EDAMAME = { name:'お通し 枝豆', short:'枝豆', items:{ edamame:40 },
+  prep:[{ d:0, rel:-120, t:'冷凍枝豆{edamame}を塩ゆでして冷ましておく' }] };
+const D_SALAD = { name:'大根と水菜のサラダ', short:'サラダ', flex:true, items:{ daikon:40, mizuna:20, minitomato:15 },
+  prep:[{ d:0, rel:-180, t:'大根{daikon}を千切り、水菜{mizuna}を切って水にさらす。ミニトマト{minitomato}は半分に切る' }] };
+const karaage = (g, flour, pcs) => ({ name:'鶏の唐揚げ', short:'唐揚げ', flex:true, items:{ momo:g, karaageko:flour, cabbage:30, lemon:0.125 },
+  prep:[
+    { d:-1, at:'15:00', t:`鶏もも肉{momo}を一口大（約{n:${pcs}}個）に切り、下味に漬け込む` },
+    { d:0, rel:-180, t:'付け合わせのキャベツ{cabbage}を千切り、レモン{lemon}をくし切りにする' },
+    { d:0, rel:-60,  t:'唐揚げ粉{karaageko}をまぶして一度揚げしておく（提供時に二度揚げ）' },
+  ] });
+const D_NIKOMI = { name:'牛すじ煮込み', short:'煮込み', flex:true, items:{ gyusuji:50, daikon:50, negi:10 },
+  prep:[
+    { d:-1, at:'13:00', t:'牛すじ{gyusuji}を下ゆでしてアクを抜き、大根{daikon}と煮込む（一晩寝かせて味を含ませる）' },
+    { d:0, rel:-30, t:'煮込みを温め直し、長ねぎ{negi}を小口切りにする' },
+  ] };
+const D_TEMPURA = { name:'天ぷら盛り合わせ', short:'天ぷら', items:{ ebi:2, kabocha:30, shiitake:20, shishito:2, tempurako:25 },
+  prep:[
+    { d:0, rel:-180, t:'エビ{ebi}の殻をむいて筋切りし、かぼちゃ{kabocha}・しいたけ{shiitake}・ししとう{shishito}を切りそろえる' },
+    { d:0, rel:-20,  t:'天ぷら粉{tempurako}で衣を用意し、油を温める（揚げは提供直前）' },
+  ] };
+const D_TAIMESHI = { name:'〆 鯛めし（土鍋）', short:'鯛めし', flex:true, items:{ kome:70, tai:20 },
+  prep:[{ d:0, rel:-150, t:'米{kome}を研いで浸水。真鯛{tai}に塩をふって焼き、土鍋{plates}台分を用意する（4人で1台）' }] };
+
+const COURSES = [
+  { id:'ume', mark:'梅', name:'梅コース', price:3500, catch:'定番の宴会コース',
+    dishes:[
+      D_EDAMAME,
+      D_SALAD,
+      { name:'刺身二種盛り（マグロ・サーモン）', short:'刺身', items:{ maguro:30, salmon:30, daikon:20, ooba:1 },
+        prep:[ P_TSUMA, { d:0, rel:-90, t:'マグロ{maguro}・サーモン{salmon}を引き、大皿{plates}枚に盛る（4人で1皿）' } ] },
+      karaage(120, 15, 3),
+      D_NIKOMI,
+      { name:'焼き鳥（ねぎま）', short:'焼き鳥', flex:true, items:{ momo:60, negi:20 },
+        prep:[{ d:-1, at:'16:00', t:'鶏もも肉{momo}・長ねぎ{negi}で、ねぎま串を{n:2}本打つ' }] },
+      { name:'〆 焼きおにぎり', short:'焼きおにぎり', flex:true, items:{ kome:70 },
+        prep:[{ d:0, rel:-150, t:'米{kome}を炊き、おにぎりを{n:1}個にぎっておく' }] },
+    ] },
+  { id:'take', mark:'竹', name:'竹コース', price:5000, catch:'刺身三種と天ぷらの人気コース',
+    dishes:[
+      { name:'小鉢 春菊のおひたし', short:'おひたし', items:{ shungiku:30 },
+        prep:[{ d:0, rel:-180, t:'春菊{shungiku}をゆでて水気を絞り、だしに浸しておく' }] },
+      D_SALAD,
+      { name:'刺身三種盛り（マグロ・ブリ・真鯛）', short:'刺身', items:{ maguro:30, buri:30, tai:25, daikon:20, ooba:1 },
+        prep:[ P_TSUMA, { d:0, rel:-90, t:'マグロ{maguro}・ブリ{buri}・真鯛{tai}を引き、大皿{plates}枚に盛る（4人で1皿）' } ] },
+      D_TEMPURA,
+      karaage(100, 12, 2.5),
+      D_NIKOMI,
+      D_TAIMESHI,
+      { name:'デザート 柚子シャーベット', short:'デザート', items:{ sorbet:60 }, prep:[] },
+    ] },
+  { id:'matsu', mark:'松', name:'松コース', price:7000, catch:'黒毛和牛と旬魚の特選コース',
+    dishes:[
+      { name:'先付 春菊と柿の白和え', short:'白和え', items:{ tofu:0.15, shungiku:15, kaki:0.15 },
+        prep:[
+          { d:-1, at:'17:00', t:'白和え用の豆腐{tofu}に重しをして水切りしておく（一晩）' },
+          { d:0, rel:-180, t:'春菊{shungiku}をゆで、柿{kaki}を短冊に切って白和え衣で和える' },
+        ] },
+      { name:'刺身五種盛り', short:'刺身', items:{ maguro:30, buri:25, tai:25, hotate:30, salmon:25, daikon:25, ooba:1 },
+        prep:[ P_TSUMA, { d:0, rel:-90, t:'マグロ{maguro}・ブリ{buri}・真鯛{tai}・ホタテ{hotate}・サーモン{salmon}を引き、大皿{plates}枚に盛る（4人で1皿）' } ] },
+      { name:'茶碗蒸し', short:'茶碗蒸し', items:{ tamago:1, momo:15, ebi:1, shiitake:10 },
+        prep:[
+          { d:-1, at:'17:00', t:'卵{tamago}をだしと合わせて卵液を作り、漉して冷蔵しておく' },
+          { d:0, rel:-180, t:'具の鶏もも肉{momo}・エビ{ebi}・しいたけ{shiitake}を切りそろえる' },
+          { d:0, rel:-45,  t:'器に具と卵液を入れ、{people}人前を蒸す' },
+        ] },
+      D_TEMPURA,
+      { name:'黒毛和牛の炙りステーキ', short:'ステーキ', items:{ wagyu:80, tamanegi:40 },
+        prep:[
+          { d:-1, at:'16:00', t:'玉ねぎ{tamanegi}をすりおろし、ステーキソースを仕込んでおく' },
+          { d:0, rel:-120, t:'和牛{wagyu}を1人前ずつ切り分け、常温に戻しておく' },
+        ] },
+      { name:'小鍋 真鱈の湯豆腐', short:'小鍋', items:{ tara:50, tofu:0.25, hakusai:40, negi:15, kombu:3 },
+        prep:[
+          { d:-1, at:'14:00', t:'昆布{kombu}を水に浸けて、昆布だしを仕込んでおく' },
+          { d:0, rel:-180, t:'真鱈{tara}・豆腐{tofu}・白菜{hakusai}・長ねぎ{negi}を切り、小鍋{people}人前に盛り込む' },
+        ] },
+      D_TAIMESHI,
+      { name:'デザート 抹茶アイス', short:'デザート', items:{ matcha:60 }, prep:[] },
+    ] },
+  { id:'nabe', mark:'鍋', name:'冬の寄せ鍋コース', price:4500, catch:'忘年会・新年会に人気の鍋コース',
+    dishes:[
+      D_EDAMAME,
+      { name:'刺身二種盛り（ブリ・マグロ）', short:'刺身', items:{ buri:30, maguro:30, daikon:20, ooba:1 },
+        prep:[ P_TSUMA, { d:0, rel:-90, t:'ブリ{buri}・マグロ{maguro}を引き、大皿{plates}枚に盛る（4人で1皿）' } ] },
+      karaage(100, 12, 2.5),
+      { name:'寄せ鍋', short:'寄せ鍋', flex:true,
+        items:{ tara:60, ebi:1, momo:50, hikiniku:40, hakusai:120, negi:30, shungiku:25, shiitake:20, enoki:30, ninjin:15, tofu:0.25, kombu:4, katsuo:8 },
+        prep:[
+          { d:-1, at:'14:00', t:'昆布{kombu}・かつお節{katsuo}でだしをとり、鍋つゆを仕込んでおく' },
+          { d:-1, at:'16:00', t:'鶏ひき肉{hikiniku}でつくねだねを仕込む' },
+          { d:0, rel:-240, t:'白菜{hakusai}・長ねぎ{negi}・春菊{shungiku}・しいたけ{shiitake}・えのき{enoki}・人参{ninjin}を切る' },
+          { d:0, rel:-150, t:'真鱈{tara}・エビ{ebi}・鶏もも肉{momo}・豆腐{tofu}を切り、鍋{plates}台分に盛り込む（4人で1台）' },
+        ] },
+      { name:'〆 雑炊', short:'雑炊', flex:true, items:{ kome:50, tamago:0.5, negi:5 },
+        prep:[{ d:0, rel:-120, t:'雑炊用に米{kome}を炊いておく。溶き卵用の卵{tamago}と、ねぎ{negi}も用意' }] },
+      { name:'デザート 柚子シャーベット', short:'デザート', items:{ sorbet:60 }, prep:[] },
+    ] },
+];
+
+// 飲み放題（120分を1.0とした係数）
+const DRINK_PLANS = [
+  { id:'none', label:'なし' },
+  { id:'90',   label:'90分',  f:0.8 },
+  { id:'120',  label:'120分', f:1.0 },
+  { id:'150',  label:'150分', f:1.15 },
+];
+const DRINK_DISH = { short:'飲み放題', items:{ beer:600, whisky:30, shochu:50, sake:50, soda:250, soft:300 },
+  prep:[{ d:0, rel:-60, t:'生ビール樽（計{beer}）を冷やし、ジョッキ・グラス・氷を多めに用意する' }] };
+
+const APPETITE = [
+  { id:'light',  label:'控えめ',   f:0.9,  hint:'×0.9｜ご年配中心・会話が主役の会食など' },
+  { id:'normal', label:'ふつう',   f:1.0,  hint:'×1.0｜一般的な宴会の量' },
+  { id:'hearty', label:'しっかり', f:1.15, hint:'×1.15｜学生・スポーツチームなど' },
+];
+
+// 祝日（2026〜2027年）。年末年始（12/31〜1/3）は別途判定
+const HOLIDAYS = new Set([
+  '2026-01-01','2026-01-12','2026-02-11','2026-02-23','2026-03-20','2026-04-29','2026-05-03','2026-05-04','2026-05-05','2026-05-06',
+  '2026-07-20','2026-08-11','2026-09-21','2026-09-22','2026-09-23','2026-10-12','2026-11-03','2026-11-23',
+  '2027-01-01','2027-01-11','2027-02-11','2027-02-23','2027-03-21','2027-03-22','2027-04-29','2027-05-03','2027-05-04','2027-05-05',
+  '2027-07-19','2027-08-11','2027-09-20','2027-09-23','2027-10-11','2027-11-03','2027-11-23',
+]);
+
+// 卸の締切ルール（初期値）
+//   deliver: 宴会日から何日前に納品するか / lead: 納品の何営業日前が締切か / cutoff: 締切時刻 / closed: 休業日（0=日〜6=土, 'h'=祝日）
+const DEFAULT_SUPPLIERS = {
+  fish:   { name:'鮮魚卸（市場）', deliver:0,  lead:1, cutoff:'17:00', closed:[0,3,'h'] },
+  meat:   { name:'精肉卸',         deliver:-1, lead:2, cutoff:'15:00', closed:[0,'h'] },
+  veg:    { name:'青果卸',         deliver:-1, lead:1, cutoff:'20:00', closed:[0,3,'h'] },
+  dry:    { name:'業務用食品卸',   deliver:-2, lead:2, cutoff:'12:00', closed:[0,6,'h'] },
+  liquor: { name:'酒類卸',         deliver:-1, lead:1, cutoff:'15:00', closed:[0,'h'] },
+};
+const DELIVER_OPTS = [ { v:0, label:'当日（朝）', short:'当日の朝' }, { v:-1, label:'前日', short:'前日' }, { v:-2, label:'2日前', short:'2日前' }, { v:-3, label:'3日前', short:'3日前' } ];
+const LEAD_OPTS = [0,1,2,3,4,5];
+const PLATE = 4;              // 大皿・鍋は4人で1つ
+const DELIVERY_TIME = '09:00'; // 納品は午前中として扱う
+
+const ICON = {
+  copy:  '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+  print: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>',
+  share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
+  check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  rules: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  info:  '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5"/><path d="M12 17.2v.3"/></svg>',
+};
+
+/* =========================================================
+   小さなユーティリティ
+   ========================================================= */
+const $  = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const yen = n => n.toLocaleString('ja-JP') + '円';
+const EPS = 1e-9;
+const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR;
+const W = ['日','月','火','水','木','金','土'];
+
+const pad = n => String(n).padStart(2, '0');
+const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseKey = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+const atTime = (d, hm) => { const [h, m] = hm.split(':').map(Number); return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h || 0, m || 0); };
+const daysBetween = (a, b) => Math.round((startOfDay(b) - startOfDay(a)) / DAY);
+const nextDow = (from, dow) => { const d = startOfDay(from); let diff = (dow - d.getDay() + 7) % 7; if (diff === 0) diff = 7; return addDays(d, diff); };
+const isHoliday = d => HOLIDAYS.has(dateKey(d)) || (d.getMonth() === 11 && d.getDate() === 31) || (d.getMonth() === 0 && d.getDate() <= 3);
+const dowLabel = d => W[d.getDay()] + (isHoliday(d) ? '・祝' : '');
+const fmtMD = d => `${d.getMonth() + 1}/${d.getDate()}(${dowLabel(d)})`;
+const fmtLong = d => `${d.getMonth() + 1}月${d.getDate()}日（${dowLabel(d)}）`;
+const fmtHM = d => `${d.getHours()}:${pad(d.getMinutes())}`;
+const trimNum = s => s.replace(/\.0$/, '');
+const ceilTo = (v, step) => Math.ceil(v / step - EPS) * step;
+
+// 量の表示（仕込み不足にならないよう切り上げ）
+function fmtQty(v, unit) {
+  if (unit === 'g' || unit === 'ml') {
+    const big = unit === 'g' ? 'kg' : 'L';
+    if (v < 1000 - EPS) {
+      const r = v < 10 ? Math.ceil(v - EPS) : ceilTo(v, 10);
+      return r >= 1000 ? `1${big}` : `${r}${unit}`;
+    }
+    return `${trimNum(ceilTo(v / 1000, 0.1).toFixed(1))}${big}`;
+  }
+  return `${Math.ceil(v - EPS)}${unit}`;
+}
+// 1人あたりの表示（四捨五入）
+function fmtPer(v, unit) {
+  if (unit === 'g' || unit === 'ml') {
+    if (v >= 1000) return `${trimNum((v / 1000).toFixed(2))}${unit === 'g' ? 'kg' : 'L'}`;
+    return `${v < 10 ? trimNum(v.toFixed(1)) : Math.round(v)}${unit}`;
+  }
+  return v >= 1 ? `${trimNum((Math.round(v * 10) / 10).toFixed(1))}${unit}` : '';
+}
+function fmtLeft(deadline, now) {
+  const diff = deadline - now;
+  const mins = Math.floor(Math.abs(diff) / MIN);
+  let s;
+  if (mins < 60) s = `${mins}分`;
+  else if (mins < 1440) s = `${Math.floor(mins / 60)}時間${mins % 60 ? (mins % 60) + '分' : ''}`;
+  else { const h = Math.floor((mins % 1440) / 60); s = `${Math.floor(mins / 1440)}日${h ? h + '時間' : ''}`; }
+  return diff >= 0 ? `あと${s}` : `${s}超過`;
+}
+function statusOf(deadline, done, now) {
+  if (done) return { k:'done', label:'発注済み' };
+  const diff = deadline - now;
+  if (diff < 0) return { k:'over', label:'締切超過' };
+  if (diff < DAY) return { k:'urgent', label:'24時間以内' };
+  if (diff < 3 * DAY) return { k:'soon', label:'3日以内' };
+  return { k:'ok', label:'余裕あり' };
+}
+
+/* =========================================================
+   状態の保存・復元（この端末の localStorage のみ）
+   ========================================================= */
+const STORE_KEY = 'enkai-shikomi-navi/v1';
+const cloneSuppliers = src => JSON.parse(JSON.stringify(src));
+
+function defaultState() {
+  const today = startOfDay(new Date());
+  return {
+    date: dateKey(nextDow(addDays(today, 6), 5)), // 1週間以上先の金曜日
+    time: '19:00', people: 20, course: 'take', drink: '120', appetite: 'normal', buffer: 10,
+    shopName: '', tab: 'prep',
+    suppliers: cloneSuppliers(DEFAULT_SUPPLIERS),
+    checks: {},
+  };
+}
+function sanitizeSupplier(def, s) {
+  const out = { ...def };
+  if (!s || typeof s !== 'object') return out;
+  if (typeof s.name === 'string') out.name = s.name.slice(0, 30);
+  if (DELIVER_OPTS.some(o => o.v === s.deliver)) out.deliver = s.deliver;
+  if (LEAD_OPTS.includes(s.lead)) out.lead = s.lead;
+  if (/^\d{2}:\d{2}$/.test(s.cutoff || '')) out.cutoff = s.cutoff;
+  if (Array.isArray(s.closed)) {
+    const c = s.closed.filter(x => x === 'h' || (Number.isInteger(x) && x >= 0 && x <= 6));
+    if (c.filter(x => x !== 'h').length < 7) out.closed = [...new Set(c)];
+  }
+  return out;
+}
+function loadState() {
+  const def = defaultState();
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { saved = null; }
+  if (!saved || typeof saved !== 'object') return def;
+  const s = { ...def };
+  const today = startOfDay(new Date());
+  const d = parseKey(saved.date);
+  if (d && d >= today) s.date = saved.date;
+  if (/^\d{2}:\d{2}$/.test(saved.time || '')) s.time = saved.time;
+  if (Number.isInteger(saved.people) && saved.people >= 1 && saved.people <= 300) s.people = saved.people;
+  if (COURSES.some(c => c.id === saved.course)) s.course = saved.course;
+  if (DRINK_PLANS.some(p => p.id === saved.drink)) s.drink = saved.drink;
+  if (APPETITE.some(a => a.id === saved.appetite)) s.appetite = saved.appetite;
+  if (Number.isInteger(saved.buffer) && saved.buffer >= 0 && saved.buffer <= 20) s.buffer = saved.buffer;
+  if (typeof saved.shopName === 'string') s.shopName = saved.shopName.slice(0, 40);
+  if (['prep','order','plan'].includes(saved.tab)) s.tab = saved.tab;
+  for (const c of CAT_ORDER) s.suppliers[c] = sanitizeSupplier(DEFAULT_SUPPLIERS[c], saved.suppliers && saved.suppliers[c]);
+  if (saved.checks && typeof saved.checks === 'object') {
+    const limit = dateKey(addDays(today, -60)); // 古いチェックは整理
+    for (const [k, v] of Object.entries(saved.checks)) if (v === true && k.slice(0, 10) >= limit) s.checks[k] = true;
+  }
+  return s;
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 保存できない環境でも動作は継続 */ } }
+
+const state = loadState();
+const canShare = typeof navigator.share === 'function';
+let R = null; // 直近の計算結果
+
+/* =========================================================
+   計算
+   ========================================================= */
+const supName = c => (state.suppliers[c].name || '').trim() || DEFAULT_SUPPLIERS[c].name;
+const isClosed = (d, closed) => closed.includes(d.getDay()) || (closed.includes('h') && isHoliday(d));
+
+// 卸ごとの納品日・発注締切を求める（休業日は前倒し）
+function schedule(sup, banquet) {
+  const notes = [];
+  let delivery = addDays(banquet, sup.deliver), guard = 0;
+  const closedDel = [];
+  while (isClosed(delivery, sup.closed)) { closedDel.push(delivery); delivery = addDays(delivery, -1); if (++guard > 14) return { error:true }; }
+  if (closedDel.length) notes.push(`${fmtDays(closedDel.reverse())}が休業日のため、納品を${fmtMD(delivery)}に前倒し`);
+  let order = delivery, left = sup.lead; const skipped = []; guard = 0;
+  while (left > 0) {
+    order = addDays(order, -1);
+    if (isClosed(order, sup.closed)) skipped.push(order); else left--;
+    if (++guard > 60) return { error:true };
+  }
+  if (skipped.length) notes.push(`${fmtDays(skipped.reverse())}が休業日のため、締切を前倒し`);
+  return { delivery, deadline: atTime(order, sup.cutoff), notes };
+}
+// 連続した日付は「12/30(水)〜1/3(日・祝)」のようにまとめる
+function fmtDays(days) {
+  const runs = [];
+  for (const d of days) {
+    const last = runs[runs.length - 1];
+    if (last && daysBetween(last[last.length - 1], d) === 1) last.push(d); else runs.push([d]);
+  }
+  return runs.map(r => r.length >= 3 ? `${fmtMD(r[0])}〜${fmtMD(r[r.length - 1])}` : r.map(fmtMD).join('・')).join('・');
+}
+
+function calc() {
+  const now = new Date();
+  const course = COURSES.find(c => c.id === state.course) || COURSES[0];
+  const people = state.people;
+  const buf = 1 + state.buffer / 100;
+  const app = APPETITE.find(a => a.id === state.appetite) || APPETITE[1];
+  const plan = DRINK_PLANS.find(p => p.id === state.drink) || DRINK_PLANS[0];
+  const banquet = parseKey(state.date) || startOfDay(now);
+  const startAt = atTime(banquet, state.time);
+
+  const dishes = course.dishes.map((d, i) => ({ ...d, key: String(i) }));
+  if (plan.f) dishes.push({ ...DRINK_DISH, name:`飲み放題（${plan.label}）`, key:'drink', factor: plan.f });
+
+  // 料理ごと → 食材ごとに集計
+  const totals = new Map();
+  const dishCalc = dishes.map(d => {
+    const f = (d.flex ? app.f : 1) * (d.factor || 1) * buf;
+    const amounts = {};
+    for (const [id, q] of Object.entries(d.items)) {
+      const v = q * people * f;
+      amounts[id] = v;
+      if (!totals.has(id)) totals.set(id, { id, ing: ING[id], qty: 0, uses: [] });
+      const t = totals.get(id);
+      t.qty += v;
+      t.uses.push({ dish: d.short, v });
+    }
+    return { d, f, amounts };
+  });
+  const ings = Object.keys(ING).filter(id => totals.has(id)).map(id => {
+    const t = totals.get(id);
+    return { ...t, packs: Math.max(1, Math.ceil(t.qty / t.ing.pack - EPS)) };
+  });
+
+  // 卸ごとの発注
+  const orders = CAT_ORDER.filter(c => ings.some(x => x.ing.cat === c)).map(c => {
+    const sup = state.suppliers[c];
+    const sch = schedule(sup, banquet);
+    const done = !!state.checks[`${state.date}|order|${c}`];
+    const status = sch.error ? { k:'over', label:'設定エラー' } : statusOf(sch.deadline, done, now);
+    return { cat: c, sup, ...sch, items: ings.filter(x => x.ing.cat === c), done, status };
+  }).sort((a, b) => (a.error ? -Infinity : +a.deadline) - (b.error ? -Infinity : +b.deadline));
+
+  // 段取り表
+  const entries = [];
+  for (const o of orders) if (!o.error) entries.push({ kind:'deadline', at: o.deadline, o });
+  const byDelivery = new Map();
+  for (const o of orders) {
+    if (o.error) continue;
+    const k = dateKey(o.delivery);
+    if (!byDelivery.has(k)) byDelivery.set(k, []);
+    byDelivery.get(k).push(o);
+  }
+  for (const [k, list] of byDelivery) entries.push({ kind:'delivery', at: atTime(parseKey(k), DELIVERY_TIME), list });
+  const preps = [];
+  for (const dc of dishCalc) dc.d.prep.forEach((p, j) => {
+    const at = p.rel != null ? new Date(+startAt + p.rel * MIN) : atTime(addDays(banquet, p.d), p.at);
+    const key = `${state.date}|prep|${state.course}|${dc.d.key}|${j}`;
+    const usedCats = [...new Set([...p.t.matchAll(/\{(\w+)\}/g)].map(m => m[1]).filter(id => ING[id]).map(id => ING[id].cat))];
+    const late = usedCats.map(c => orders.find(o => o.cat === c)).filter(o => o && !o.error && startOfDay(o.delivery) > startOfDay(at));
+    const e = { kind:'prep', at, dc, p, key, done: !!state.checks[key], late };
+    entries.push(e); preps.push(e);
+  });
+  entries.push({ kind:'start', at: startAt });
+  entries.push({ kind:'now', at: now });
+  const ORDER = { now:0, delivery:1, deadline:2, prep:3, start:4 };
+  entries.sort((a, b) => (a.at - b.at) || (ORDER[a.kind] - ORDER[b.kind]));
+
+  return { now, course, people, buf, app, plan, banquet, startAt, dishCalc, ings, orders, entries, preps };
+}
+
+/* =========================================================
+   テキスト生成（コピー・共有用）
+   ========================================================= */
+function fillTemplate(t, dc, html) {
+  const wrap = s => html ? `<b class="amt">${s}</b>` : s;
+  const src = html ? esc(t) : t;
+  return src.replace(/\{(\w+)(?::([\d.]+))?\}/g, (m, k, a) => {
+    if (k === 'people') return wrap(`${R.people}`);
+    if (k === 'plates') return wrap(`${Math.ceil(R.people / PLATE)}`);
+    if (k === 'n') return wrap(`${Math.ceil(R.people * Number(a) * dc.f - EPS)}`);
+    if (ING[k] && dc.amounts[k] != null) return wrap(fmtQty(dc.amounts[k], ING[k].unit));
+    return '';
+  });
+}
+const drinkText = r => r.plan.f ? `飲み放題${r.plan.label}` : '飲み放題なし';
+
+function prepText(r) {
+  const L = [];
+  L.push(`【仕込み表】${fmtLong(r.banquet)} ${state.time}〜`);
+  L.push(`${r.people}名様／${r.course.name}／${drinkText(r)}`);
+  L.push(`（食べる量：${r.app.label}／予備：+${state.buffer}%）`);
+  for (const c of CAT_ORDER) {
+    const items = r.ings.filter(x => x.ing.cat === c);
+    if (!items.length) continue;
+    const o = r.orders.find(x => x.cat === c);
+    L.push('');
+    L.push(`■${CATS[c].label}${o && !o.error ? `（${supName(c)}／締切 ${fmtMD(o.deadline)} ${fmtHM(o.deadline)}）` : ''}`);
+    for (const x of items) L.push(`・${x.ing.name}　${fmtQty(x.qty, x.ing.unit)}（発注目安：${x.ing.packLabel}×${x.packs}）`);
+  }
+  return L.join('\n');
+}
+function orderMemo(o, r) {
+  const L = [];
+  L.push('【発注のお願い】');
+  L.push(`${supName(o.cat)} 御中`);
+  L.push('');
+  L.push('いつもお世話になっております。');
+  L.push('下記のとおり発注をお願いいたします。');
+  L.push('');
+  L.push(`■納品希望日：${fmtLong(o.delivery)} 午前中`);
+  L.push(`■用途：${fmtMD(r.banquet)} 宴会 ${r.people}名様（${r.course.name}）`);
+  L.push('');
+  for (const x of o.items) L.push(`・${x.ing.name}　${x.ing.packLabel} × ${x.packs}`);
+  L.push('');
+  L.push('以上、よろしくお願いいたします。');
+  if (state.shopName.trim()) L.push(state.shopName.trim());
+  return L.join('\n');
+}
+function ruleText(sup) {
+  const del = (DELIVER_OPTS.find(o => o.v === sup.deliver) || DELIVER_OPTS[0]).label;
+  const lead = sup.lead === 0 ? '納品日の当日' : `納品の${sup.lead}営業日前`;
+  const order = [1,2,3,4,5,6,0,'h'];
+  const closed = order.filter(k => sup.closed.includes(k)).map(k => k === 'h' ? '祝' : W[k]).join('・') || 'なし';
+  return `宴会の${del}に納品｜${lead} ${sup.cutoff}締切｜休み：${closed}`;
+}
+
+/* =========================================================
+   描画
+   ========================================================= */
+function render() {
+  const active = document.activeElement;
+  const fk = active && active.closest && active.closest('#results') ? active.getAttribute('data-fk') : null;
+
+  R = calc();
+  renderInputsDynamic(R);
+  renderSummary(R);
+  renderPrep(R);
+  renderOrders(R);
+  renderPlan(R);
+  renderMobileBar(R);
+
+  if (fk) { const el = document.querySelector(`#results [data-fk="${fk}"]`); if (el) el.focus({ preventScroll:true }); }
+}
+
+function renderInputsDynamic(r) {
+  const today = startOfDay(r.now);
+  $('#todayLabel').textContent = `今日 ${fmtMD(today)}`;
+  $('#dateInput').min = dateKey(today);
+  const dl = daysBetween(today, r.banquet);
+  $('#dateHint').textContent = dl > 0 ? `宴会まであと${dl}日` : dl === 0 ? '今日が宴会日です' : '過去の日付です';
+
+  const f = nextDow(today, 5), s = nextDow(today, 6);
+  const chips = [
+    { label:'次の金曜', d:f }, { label:'次の土曜', d:s }, { label:'翌週の金曜', d:addDays(f, 7) }, { label:'2週間後', d:addDays(today, 14) },
+  ];
+  $('#dateChips').innerHTML = chips.map(c => {
+    const k = dateKey(c.d);
+    return `<button type="button" class="chip${k === state.date ? ' on' : ''}" data-date="${k}" aria-pressed="${k === state.date}">${c.label}<small>${c.d.getMonth() + 1}/${c.d.getDate()}</small></button>`;
+  }).join('');
+
+  $$('#peopleChips .chip').forEach(b => { const on = +b.dataset.people === state.people; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  $$('#courseGrid .course').forEach(l => l.classList.toggle('is-on', l.querySelector('input').checked));
+  $('#courseHint').textContent = `1人 ${yen(r.course.price)}`;
+  $('#menuTitle').textContent = `${r.course.name}の内容（${r.course.dishes.length}品）`;
+  $('#courseDishes').innerHTML = r.course.dishes.map(d => `<li>${esc(d.name)}</li>`).join('');
+  $('#appHint').textContent = r.app.hint;
+  $('#bufferOut').textContent = `+${state.buffer}%`;
+}
+
+function renderSummary(r) {
+  const dl = daysBetween(r.now, r.banquet);
+  const dlLabel = dl > 0 ? `あと${dl}日` : dl === 0 ? '本日' : '終了';
+  const next = r.orders.find(o => !o.done && !o.error);
+  const doneCount = r.orders.filter(o => o.done).length;
+  const prepDone = r.preps.filter(p => p.done).length;
+  const overCount = r.orders.filter(o => !o.done && o.status.k === 'over').length;
+
+  const warns = [];
+  if (dl < 0) warns.push('宴会日が過ぎています。日付を確認してください。');
+  else if (overCount) warns.push(`締切を過ぎた発注が${overCount}件あります。至急、取引先に電話で間に合うか確認しましょう。`);
+  if (r.orders.some(o => o.error)) warns.push('休業日の設定が多すぎて締切を計算できない卸があります。締切ルールを見直してください。');
+
+  let nextHtml = '';
+  if (next) {
+    const cat = CATS[next.cat];
+    nextHtml = `<button type="button" class="next st-${next.status.k}" data-action="goto" data-tab="order" data-fk="sum-next">
+      <span class="next-label">次の発注締切（タップで一覧へ）</span>
+      <span class="next-sup"><span class="stamp sm ${cat.cls}" aria-hidden="true">${cat.mark}</span>${esc(supName(next.cat))}</span>
+      <span class="badge st-${next.status.k}">${next.status.label}</span>
+      <span class="next-when"><b>${fmtMD(next.deadline)} ${fmtHM(next.deadline)}</b><span class="cd" data-deadline="${+next.deadline}">${fmtLeft(next.deadline, r.now)}</span></span>
+    </button>`;
+  } else if (r.orders.length) {
+    nextHtml = `<div class="next st-done"><span class="next-label">発注</span><span class="next-sup">${ICON.check}すべての発注が完了しています</span></div>`;
+  }
+
+  $('#summary').innerHTML = `
+    <div class="sum-date">${fmtLong(r.banquet)} ${state.time}〜 <span class="pill">${dlLabel}</span></div>
+    <div class="sum-main"><b>${r.people}名様</b><span>${r.course.name}（${yen(r.course.price)}）</span><span>${drinkText(r)}</span></div>
+    ${warns.map(w => `<p class="warn">${ICON.alert}<span>${w}</span></p>`).join('')}
+    ${nextHtml}
+    <div class="stats">
+      <div class="stat"><b>${r.ings.length}<small>品目</small></b><span>食材</span></div>
+      <div class="stat"><b>${doneCount}<small>/${r.orders.length}社</small></b><span>発注済み</span></div>
+      <div class="stat"><b>${prepDone}<small>/${r.preps.length}件</small></b><span>仕込み済み</span></div>
+    </div>`;
+
+  const remain = r.orders.filter(o => !o.done).length;
+  const hot = r.orders.some(o => !o.done && (o.status.k === 'over' || o.status.k === 'urgent'));
+  const cnt = $('#orderCount');
+  cnt.textContent = remain ? String(remain) : '✓';
+  cnt.classList.toggle('hot', hot);
+  cnt.setAttribute('aria-label', remain ? `未発注${remain}件` : 'すべて発注済み');
+}
+
+function renderPrep(r) {
+  const groups = CAT_ORDER.map(c => ({ c, items: r.ings.filter(x => x.ing.cat === c), o: r.orders.find(o => o.cat === c) })).filter(g => g.items.length);
+  $('#panel-prep').innerHTML = `
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">食材ごとの仕込み量（目安）</h2>
+        <p class="formula">1人前の量 ×<b>${r.people}名</b>× 食べる量<b>${r.app.label}</b>× 予備<b>+${state.buffer}%</b></p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="btn" data-action="copy-prep" data-fk="copy-prep">${ICON.copy}仕込み表をコピー</button>
+        <button type="button" class="btn" data-action="print" data-fk="print">${ICON.print}印刷</button>
+      </div>
+    </div>
+    ${groups.map(g => `
+      <section class="cat" aria-label="${CATS[g.c].label}">
+        <h3 class="cat-head"><span class="stamp ${CATS[g.c].cls}" aria-hidden="true">${CATS[g.c].mark}</span><span>${CATS[g.c].label}</span>
+          ${g.o && !g.o.error ? `<span class="cat-meta">${esc(supName(g.c))}｜締切 ${fmtMD(g.o.deadline)} ${fmtHM(g.o.deadline)}</span>` : ''}</h3>
+        <ul class="ings">${g.items.map(x => ingRow(x, r)).join('')}</ul>
+      </section>`).join('')}
+    <p class="note">※ 量は切り上げて表示しています。大根・鶏もも肉など複数の料理で使う食材は、料理ごとの内訳も表示しています。</p>`;
+}
+function ingRow(x, r) {
+  const per = fmtPer(x.qty / r.people, x.ing.unit);
+  const uses = x.uses.length > 1
+    ? x.uses.map(u => `${esc(u.dish)} ${fmtQty(u.v, x.ing.unit)}`).join(' ／ ')
+    : esc(x.uses[0].dish);
+  return `<li class="ing">
+    <span class="ing-name">${esc(x.ing.name)}</span>
+    <span class="ing-amt">${fmtQty(x.qty, x.ing.unit)}</span>
+    <span class="ing-uses">${uses}</span>
+    <span class="ing-per">${per ? `1人 約${per}` : ''}</span>
+    <span class="ing-pack">発注目安：<b>${esc(x.ing.packLabel)} × ${x.packs}</b></span>
+  </li>`;
+}
+
+function renderOrders(r) {
+  $('#panel-order').innerHTML = `
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">卸への発注締切</h2>
+        <p class="formula">締切が早い順です。発注したら「発注済みにする」を押してください。</p>
+      </div>
+      <div class="panel-actions">
+        <button type="button" class="btn" data-action="open-settings" data-fk="open-settings">${ICON.rules}締切ルールを変更</button>
+      </div>
+    </div>
+    <div class="orders">${r.orders.map(o => orderCard(o, r)).join('')}</div>
+    ${r.plan.f ? '' : '<p class="note">※ 飲み放題なしのため、酒類は通常の在庫で対応する想定です（発注先に含めていません）。</p>'}
+    <p class="note">※ 締切は「納品日から、取引先の休業日を除いて数えた営業日」で計算しています。</p>`;
+}
+function orderCard(o, r) {
+  const cat = CATS[o.cat];
+  const head = `<header class="order-head">
+      <span class="stamp ${cat.cls}" aria-hidden="true">${cat.mark}</span>
+      <div class="order-title"><h3>${esc(supName(o.cat))}</h3><span>${cat.label}｜${o.items.length}品目</span></div>
+      <span class="badge st-${o.status.k}">${o.done ? ICON.check : ''}${o.status.label}</span>
+    </header>`;
+  const rule = `<button type="button" class="rule-link" data-action="edit-rule" data-cat="${o.cat}" data-fk="rule-${o.cat}"><span>${ruleText(o.sup)}</span><span>変更</span></button>`;
+  if (o.error) {
+    return `<article class="order st-over">${head}<p class="order-alert">${ICON.alert}<span>休業日の設定が多すぎるため締切を計算できません。</span></p>${rule}</article>`;
+  }
+  return `<article class="order st-${o.status.k}">
+    ${head}
+    <div class="order-when">
+      <div class="ow-row"><span class="ow-k">締切</span><span class="ow-v"><b>${fmtMD(o.deadline)} ${fmtHM(o.deadline)}</b>${o.done ? '' : `<span class="cd" data-deadline="${+o.deadline}">${fmtLeft(o.deadline, r.now)}</span>`}</span></div>
+      <div class="ow-row"><span class="ow-k">納品</span><span class="ow-v">${fmtMD(o.delivery)} 午前</span></div>
+    </div>
+    ${o.notes.map(n => `<p class="order-note">${ICON.info}<span>${n}</span></p>`).join('')}
+    ${o.status.k === 'over' ? `<p class="order-alert">${ICON.alert}<span>締切を過ぎています。至急、取引先に電話で間に合うか確認しましょう。</span></p>` : ''}
+    <ul class="order-items">${o.items.map(x => `<li><span class="oi-name">${esc(x.ing.name)}<small>必要 ${fmtQty(x.qty, x.ing.unit)}</small></span><span class="oi-qty">${esc(x.ing.packLabel)} × <b>${x.packs}</b></span></li>`).join('')}</ul>
+    <div class="order-actions">
+      <button type="button" class="btn" data-action="copy-order" data-cat="${o.cat}" data-fk="copy-${o.cat}">${ICON.copy}発注メモをコピー</button>
+      ${canShare ? `<button type="button" class="btn" data-action="share-order" data-cat="${o.cat}" data-fk="share-${o.cat}">${ICON.share}共有</button>` : ''}
+      <button type="button" class="btn btn-check${o.done ? ' on' : ''}" data-action="toggle-order" data-cat="${o.cat}" aria-pressed="${o.done}" data-fk="done-${o.cat}">${ICON.check}${o.done ? '発注済み' : '発注済みにする'}</button>
+    </div>
+    ${rule}
+  </article>`;
+}
+
+function renderPlan(r) {
+  const groups = [];
+  for (const e of r.entries) {
+    const k = dateKey(e.at);
+    let g = groups[groups.length - 1];
+    if (!g || g.k !== k) { g = { k, day: startOfDay(e.at), items: [] }; groups.push(g); }
+    g.items.push(e);
+  }
+  const todayK = dateKey(r.now);
+  $('#panel-plan').innerHTML = `
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">段取り表（発注・納品・仕込み）</h2>
+        <p class="formula">今日から宴会当日までの流れです。終わった仕込みはチェックを入れましょう。</p>
+      </div>
+      <div class="legend" aria-hidden="true"><span class="lg lg-deadline">発注締切</span><span class="lg lg-delivery">納品</span><span class="lg lg-prep">仕込み</span></div>
+    </div>
+    <ol class="tl">${groups.map(g => {
+      const rel = daysBetween(g.day, r.banquet);
+      const relLabel = rel === 0 ? '<span class="tag main">宴会当日</span>' : rel > 0 ? `<span class="rel">${rel === 1 ? '前日' : rel + '日前'}</span>` : '';
+      return `<li class="tl-day">
+        <div class="tl-date">${fmtMD(g.day)}${g.k === todayK ? '<span class="tag">今日</span>' : ''}${relLabel}</div>
+        <ol class="tl-items">${g.items.map(e => tlItem(e, r)).join('')}</ol>
+      </li>`;
+    }).join('')}</ol>`;
+}
+function tlItem(e, r) {
+  const past = e.at < r.now;
+  if (e.kind === 'now') return `<li class="tl-now">いま ${fmtHM(e.at)}</li>`;
+  if (e.kind === 'deadline') {
+    const o = e.o, cat = CATS[o.cat];
+    return `<li class="tl-item k-deadline st-${o.status.k}${past && o.done ? ' past' : ''}">
+      <span class="tl-time">${fmtHM(e.at)}</span>
+      <div><span class="tl-kind">発注締切</span><span class="tl-text tl-sups"><span><span class="stamp sm ${cat.cls}" aria-hidden="true">${cat.mark}</span>${esc(supName(o.cat))}</span></span>
+        <span class="badge st-${o.status.k}">${o.status.label}${o.done ? '' : '・' + fmtLeft(o.deadline, r.now)}</span></div>
+      <button type="button" class="tl-check" data-action="toggle-order" data-cat="${o.cat}" aria-pressed="${o.done}" aria-label="${esc(supName(o.cat))}を発注済みにする" data-fk="tl-done-${o.cat}">${ICON.check}</button>
+    </li>`;
+  }
+  if (e.kind === 'delivery') {
+    return `<li class="tl-item k-delivery${past ? ' past' : ''}">
+      <span class="tl-time">午前</span>
+      <div><span class="tl-kind">納品</span><span class="tl-text tl-sups">${e.list.map(o => `<span><span class="stamp sm ${CATS[o.cat].cls}" aria-hidden="true">${CATS[o.cat].mark}</span>${esc(supName(o.cat))}</span>`).join('')}</span></div>
+      <span></span>
+    </li>`;
+  }
+  if (e.kind === 'prep') {
+    const warn = e.late.map(o => `<span class="tl-warn">${ICON.alert}<span>${esc(supName(o.cat))}の納品（${fmtMD(o.delivery)}）より前の仕込みです。納品日を早めてください。</span></span>`).join('');
+    return `<li class="tl-item k-prep${e.done ? ' done' : ''}${past && !e.done ? ' past' : ''}">
+      <span class="tl-time">${fmtHM(e.at)}</span>
+      <div><span class="tl-kind">仕込み｜${esc(e.dc.d.short)}</span><span class="tl-text">${fillTemplate(e.p.t, e.dc, true)}</span>${warn}</div>
+      <button type="button" class="tl-check" data-action="toggle-prep" data-key="${esc(e.key)}" aria-pressed="${e.done}" aria-label="${esc(e.dc.d.short)}の仕込みを完了にする" data-fk="${esc('tl-' + e.key)}">${ICON.check}</button>
+    </li>`;
+  }
+  return `<li class="tl-item k-start${past ? ' past' : ''}">
+    <span class="tl-time">${fmtHM(e.at)}</span>
+    <div><span class="tl-kind">宴会スタート</span><span class="tl-text">${r.people}名様｜${r.course.name}｜${drinkText(r)}</span></div>
+    <span></span>
+  </li>`;
+}
+
+function renderMobileBar(r) {
+  const next = r.orders.find(o => !o.done && !o.error);
+  $('#mbMain').textContent = `${r.people}名・${r.course.name}`;
+  const sub = $('#mbSub');
+  sub.textContent = next ? `次の締切 ${fmtMD(next.deadline)} ${fmtHM(next.deadline)}（${fmtLeft(next.deadline, r.now)}）` : '発注はすべて完了しています';
+  sub.classList.toggle('hot', !!next && (next.status.k === 'over' || next.status.k === 'urgent'));
+}
+
+/* =========================================================
+   入力欄の構築・同期
+   ========================================================= */
+function buildInputs() {
+  const ts = $('#timeInput');
+  for (let m = 11 * 60; m <= 21 * 60 + 30; m += 30) { const v = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; ts.add(new Option(v, v)); }
+  $('#peopleChips').innerHTML = [10, 20, 30, 40, 50].map(n => `<button type="button" class="chip" data-people="${n}">${n}名</button>`).join('');
+  $('#courseGrid').innerHTML = COURSES.map(c => `
+    <label class="course" style="--mc:var(--m-${c.id})">
+      <input type="radio" name="course" value="${c.id}">
+      <span class="course-mark" aria-hidden="true">${c.mark}</span>
+      <span class="course-name">${c.name.replace(/^(.+?)(コース)$/, '<span class="nb">$1</span><span class="nb">$2</span>')}</span>
+      <span class="course-price">${yen(c.price)}<small>全${c.dishes.length}品</small></span>
+      <span class="course-catch">${c.catch}</span>
+      <span class="course-tick" aria-hidden="true">${ICON.check}</span>
+    </label>`).join('');
+  $('#drinkSeg').innerHTML = DRINK_PLANS.map(p => `<label><input type="radio" name="drink" value="${p.id}"><span>${p.label}</span></label>`).join('');
+  $('#appSeg').innerHTML = APPETITE.map(a => `<label><input type="radio" name="appetite" value="${a.id}"><span>${a.label}</span></label>`).join('');
+}
+function setFill(el) {
+  const min = +el.min, max = +el.max, v = +el.value;
+  el.style.setProperty('--fill', `${((v - min) / (max - min)) * 100}%`);
+}
+function syncInputs() {
+  const ts = $('#timeInput');
+  if (![...ts.options].some(o => o.value === state.time)) ts.add(new Option(state.time, state.time));
+  $('#dateInput').value = state.date;
+  ts.value = state.time;
+  $('#peopleInput').value = state.people;
+  const pr = $('#peopleRange'); pr.value = clamp(state.people, 2, 120); setFill(pr);
+  $$('input[name=course]').forEach(i => { i.checked = i.value === state.course; });
+  $$('input[name=drink]').forEach(i => { i.checked = i.value === state.drink; });
+  $$('input[name=appetite]').forEach(i => { i.checked = i.value === state.appetite; });
+  const br = $('#bufferRange'); br.value = state.buffer; setFill(br);
+  $('#shopName').value = state.shopName;
+}
+function update() { save(); render(); }
+
+function setPeople(v, src) {
+  state.people = clamp(Math.round(v), 1, 300);
+  if (src !== 'input') $('#peopleInput').value = state.people;
+  if (src !== 'range') { const pr = $('#peopleRange'); pr.value = clamp(state.people, 2, 120); setFill(pr); }
+  update();
+}
+
+/* =========================================================
+   タブ
+   ========================================================= */
+function setTab(id, focus) {
+  state.tab = id; save();
+  for (const t of $$('[role=tab]')) {
+    const on = t.dataset.tab === id;
+    t.setAttribute('aria-selected', String(on));
+    t.tabIndex = on ? 0 : -1;
+    if (on && focus) t.focus();
+  }
+  for (const p of $$('[role=tabpanel]')) p.hidden = p.id !== `panel-${id}`;
+}
+function onTabKey(e) {
+  const tabs = $$('[role=tab]');
+  const i = tabs.indexOf(e.currentTarget);
+  let j = null;
+  if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+  else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+  else if (e.key === 'Home') j = 0;
+  else if (e.key === 'End') j = tabs.length - 1;
+  if (j != null) { e.preventDefault(); setTab(tabs[j].dataset.tab, true); }
+}
+
+/* =========================================================
+   コピー・共有・トースト
+   ========================================================= */
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; }
+  } catch (e) { /* 下の方法を試す */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+function openDialog(dlg) { if (typeof dlg.showModal === 'function') { if (!dlg.open) dlg.showModal(); } else dlg.setAttribute('open', ''); }
+function closeDialog(dlg) { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
+function showText(title, text) {
+  $('#textDlgTitle').textContent = title;
+  $('#textDlgArea').value = text;
+  openDialog($('#textDlg'));
+  $('#textDlgArea').select();
+}
+async function copyWithFallback(text, title, okMsg) {
+  if (await copyText(text)) toast(okMsg); else showText(title, text);
+}
+let toastTimer = 0;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* =========================================================
+   締切ルール（設定ダイアログ）
+   ========================================================= */
+function renderSupplierForms() {
+  $('#supplierForms').innerHTML = CAT_ORDER.map(c => {
+    const s = state.suppliers[c], cat = CATS[c];
+    return `<fieldset class="sup-form" id="sup-${c}" data-cat="${c}">
+      <legend><span class="stamp ${cat.cls}" aria-hidden="true">${cat.mark}</span>${cat.label}</legend>
+      <div class="sf-grid">
+        <label class="tf full">取引先名<input class="ctl" type="text" data-f="name" maxlength="30" value="${esc(s.name)}" placeholder="${esc(DEFAULT_SUPPLIERS[c].name)}"></label>
+        <label class="tf">納品日（宴会の）<select class="ctl" data-f="deliver">${DELIVER_OPTS.map(o => `<option value="${o.v}"${o.v === s.deliver ? ' selected' : ''}>${o.short}</option>`).join('')}</select></label>
+        <label class="tf">発注締切（納品の）<select class="ctl" data-f="lead">${LEAD_OPTS.map(n => `<option value="${n}"${n === s.lead ? ' selected' : ''}>${n === 0 ? '当日' : `${n}営業日前`}</option>`).join('')}</select></label>
+        <label class="tf">締切時刻<input class="ctl" type="time" data-f="cutoff" value="${s.cutoff}" step="900"></label>
+        <div class="tf full"><span id="dow-${c}">休業日（タップで切り替え）</span>
+          <div class="dows" role="group" aria-labelledby="dow-${c}">${[1,2,3,4,5,6,0,'h'].map(k => `<button type="button" class="dow" data-dow="${k}" aria-pressed="${s.closed.includes(k)}" aria-label="${k === 'h' ? '祝日・年末年始' : W[k] + '曜日'}">${k === 'h' ? '祝' : W[k]}</button>`).join('')}</div>
+        </div>
+      </div>
+      <p class="sf-preview" data-preview="${c}"></p>
+    </fieldset>`;
+  }).join('');
+  updatePreviews();
+}
+function updatePreviews() {
+  if (!R) return;
+  for (const c of CAT_ORDER) {
+    const el = document.querySelector(`[data-preview="${c}"]`);
+    if (!el) continue;
+    const sch = schedule(state.suppliers[c], R.banquet);
+    const used = R.orders.some(o => o.cat === c);
+    el.innerHTML = sch.error ? '締切を計算できません（休業日を減らしてください）'
+      : `今回の宴会なら：締切 <b>${fmtMD(sch.deadline)} ${fmtHM(sch.deadline)}</b>／納品 <b>${fmtMD(sch.delivery)}</b>${used ? '' : '（今回は発注なし）'}`;
+  }
+}
+function openSettings(cat) {
+  renderSupplierForms();
+  $('#shopName').value = state.shopName;
+  const dlg = $('#settingsDlg');
+  openDialog(dlg);
+  if (cat) {
+    const f = $(`#sup-${cat}`);
+    if (f) {
+      f.scrollIntoView({ block:'start' });
+      f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+      const first = f.querySelector('select[data-f="lead"]');
+      if (first) first.focus({ preventScroll:true });
+    }
+  }
+}
+function onSupInput(e) {
+  const el = e.target, f = el.dataset.f;
+  if (!f) return;
+  const c = el.closest('[data-cat]').dataset.cat, s = state.suppliers[c];
+  if (f === 'name') s.name = el.value.slice(0, 30);
+  else if (f === 'deliver') s.deliver = +el.value;
+  else if (f === 'lead') s.lead = +el.value;
+  else if (f === 'cutoff') { if (/^\d{2}:\d{2}$/.test(el.value)) s.cutoff = el.value; else return; }
+  update(); updatePreviews();
+}
+
+/* =========================================================
+   イベント
+   ========================================================= */
+function onAction(e) {
+  const b = e.target.closest('[data-action]');
+  if (!b) return;
+  const c = b.dataset.cat;
+  switch (b.dataset.action) {
+    case 'goto':
+      setTab(b.dataset.tab);
+      $('.tabs').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start' });
+      break;
+    case 'copy-prep':
+      copyWithFallback(prepText(R), '仕込み表', '仕込み表をコピーしました');
+      break;
+    case 'print':
+      window.print();
+      break;
+    case 'copy-order': {
+      const o = R.orders.find(x => x.cat === c);
+      if (o) copyWithFallback(orderMemo(o, R), `${supName(c)} 発注メモ`, `${supName(c)}への発注メモをコピーしました`);
+      break;
+    }
+    case 'share-order': {
+      const o = R.orders.find(x => x.cat === c);
+      if (o && canShare) navigator.share({ title:`${supName(c)} 発注メモ`, text: orderMemo(o, R) }).catch(() => {});
+      break;
+    }
+    case 'toggle-order': {
+      const k = `${state.date}|order|${c}`;
+      if (state.checks[k]) delete state.checks[k]; else state.checks[k] = true;
+      update();
+      toast(state.checks[k] ? `${supName(c)}を発注済みにしました` : `${supName(c)}の発注済みを取り消しました`);
+      break;
+    }
+    case 'toggle-prep': {
+      const k = b.dataset.key;
+      if (state.checks[k]) delete state.checks[k]; else state.checks[k] = true;
+      update();
+      break;
+    }
+    case 'edit-rule':
+      openSettings(c);
+      break;
+    case 'open-settings':
+      openSettings();
+      break;
+  }
+}
+
+function bind() {
+  const onDate = e => { if (parseKey(e.target.value) && e.target.value !== state.date) { state.date = e.target.value; update(); } };
+  $('#dateInput').addEventListener('input', onDate);
+  $('#dateInput').addEventListener('change', onDate);
+  $('#timeInput').addEventListener('change', e => { state.time = e.target.value; update(); });
+  $('#dateChips').addEventListener('click', e => {
+    const b = e.target.closest('[data-date]');
+    if (b) { state.date = b.dataset.date; $('#dateInput').value = state.date; update(); }
+  });
+
+  $('#peopleRange').addEventListener('input', e => setPeople(+e.target.value, 'range'));
+  $('#peopleInput').addEventListener('input', e => { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 300) setPeople(v, 'input'); });
+  $('#peopleInput').addEventListener('change', e => { const v = parseInt(e.target.value, 10); setPeople(Number.isFinite(v) ? v : state.people); });
+  $$('.step-btn').forEach(b => b.addEventListener('click', () => setPeople(state.people + Number(b.dataset.step))));
+  $('#peopleChips').addEventListener('click', e => { const b = e.target.closest('[data-people]'); if (b) setPeople(+b.dataset.people); });
+
+  $('#courseGrid').addEventListener('change', e => { if (e.target.name === 'course') { state.course = e.target.value; update(); } });
+  $('#drinkSeg').addEventListener('change', e => { state.drink = e.target.value; update(); });
+  $('#appSeg').addEventListener('change', e => { state.appetite = e.target.value; update(); });
+  $('#bufferRange').addEventListener('input', e => { state.buffer = +e.target.value; setFill(e.target); update(); });
+
+  $('#resetBtn').addEventListener('click', () => {
+    const d = defaultState();
+    Object.assign(state, { date:d.date, time:d.time, people:d.people, course:d.course, drink:d.drink, appetite:d.appetite, buffer:d.buffer });
+    syncInputs(); update();
+    toast('入力を初期状態に戻しました');
+  });
+
+  $$('[role=tab]').forEach(t => { t.addEventListener('click', () => setTab(t.dataset.tab)); t.addEventListener('keydown', onTabKey); });
+  $('#results').addEventListener('click', onAction);
+
+  // 設定ダイアログ
+  $('#openSettings').addEventListener('click', () => openSettings());
+  const forms = $('#supplierForms');
+  forms.addEventListener('input', onSupInput);
+  forms.addEventListener('change', onSupInput);
+  forms.addEventListener('click', e => {
+    const b = e.target.closest('.dow');
+    if (!b) return;
+    const c = b.closest('[data-cat]').dataset.cat, s = state.suppliers[c];
+    const k = b.dataset.dow === 'h' ? 'h' : Number(b.dataset.dow);
+    const i = s.closed.indexOf(k);
+    if (i >= 0) s.closed.splice(i, 1);
+    else {
+      if (k !== 'h' && s.closed.filter(x => x !== 'h').length >= 6) { toast('すべての曜日を休業日にはできません'); return; }
+      s.closed.push(k);
+    }
+    b.setAttribute('aria-pressed', String(i < 0));
+    update(); updatePreviews();
+  });
+  $('#shopName').addEventListener('input', e => { state.shopName = e.target.value.slice(0, 40); save(); });
+  $('#resetRules').addEventListener('click', () => {
+    if (!window.confirm('締切ルールと取引先名を初期値に戻しますか？')) return;
+    state.suppliers = cloneSuppliers(DEFAULT_SUPPLIERS);
+    renderSupplierForms(); update(); updatePreviews();
+    toast('締切ルールを初期値に戻しました');
+  });
+  $$('dialog').forEach(d => {
+    d.addEventListener('click', e => { if (e.target === d || e.target.closest('[data-close]')) closeDialog(d); });
+  });
+
+  // モバイル下部バー：結果が画面より下にあるときだけ表示
+  const bar = $('#mobileBar');
+  $('#mbGo').addEventListener('click', () => $('#results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start' }));
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([en]) => bar.classList.toggle('show', !en.isIntersecting && en.boundingClientRect.top > 0)).observe($('#results'));
+  }
+
+  // カウントダウン更新（30秒ごと。状態が変わったら全体を再描画）
+  let lastFull = Date.now();
+  setInterval(() => {
+    const now = new Date();
+    const changed = R && R.orders.some(o => !o.error && statusOf(o.deadline, o.done, now).k !== o.status.k);
+    if (changed || now - lastFull > 5 * MIN || dateKey(now) !== dateKey(R.now)) { lastFull = Date.now(); render(); return; }
+    $$('[data-deadline]').forEach(el => { el.textContent = fmtLeft(new Date(+el.dataset.deadline), now); });
+    renderMobileBar({ ...R, now });
+  }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); });
+}
+
+/* =========================================================
+   起動
+   ========================================================= */
+buildInputs();
+syncInputs();
+bind();
+setTab(state.tab);
+render();
+})();
+</script>
+</body>
+</html>
