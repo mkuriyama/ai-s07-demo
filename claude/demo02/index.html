@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>宴会の仕込み量・発注締め切り計算</title>
+<style>
+  :root {
+    --bg: #f7f5f2;
+    --card: #ffffff;
+    --text: #2b2622;
+    --muted: #7a716a;
+    --line: #e2dcd5;
+    --accent: #b5452a;
+    --accent-soft: #f7e4dd;
+    --ok: #22663f;
+    --ok-soft: #e1f1e7;
+    --warn: #8a5300;
+    --warn-soft: #fff1d6;
+    --ng: #a51f17;
+    --ng-soft: #fbe2df;
+    --focus: #3b74d9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1816;
+      --card: #242120;
+      --text: #f1ece6;
+      --muted: #a79d94;
+      --line: #3d3834;
+      --accent: #f08a6c;
+      --accent-soft: #3d2a24;
+      --ok: #8fd4a6;
+      --ok-soft: #1f3327;
+      --warn: #f2c066;
+      --warn-soft: #3a2f18;
+      --ng: #ff9b92;
+      --ng-soft: #3f211f;
+      --focus: #8fb5ff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1816;
+    --card: #242120;
+    --text: #f1ece6;
+    --muted: #a79d94;
+    --line: #3d3834;
+    --accent: #f08a6c;
+    --accent-soft: #3d2a24;
+    --ok: #8fd4a6;
+    --ok-soft: #1f3327;
+    --warn: #f2c066;
+    --warn-soft: #3a2f18;
+    --ng: #ff9b92;
+    --ng-soft: #3f211f;
+    --focus: #8fb5ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 8px 0 4px; }
+  .lead { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card h2 { font-size: 15px; margin: 0 0 12px; }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field > label, .field > .label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  input[type="number"], input[type="date"], input[type="time"], select {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 16px; /* iOSの自動ズーム防止 */
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, .choice input:focus-visible + span {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .row { display: flex; gap: 10px; align-items: center; }
+  .row input[type="number"] { flex: 0 0 110px; }
+  .row .unit { font-size: 14px; color: var(--muted); white-space: nowrap; }
+  input[type="range"] { width: 100%; accent-color: var(--accent); height: 28px; }
+  .range-scale { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .choices { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  @media (min-width: 520px) { .choices { grid-template-columns: repeat(3, 1fr); } }
+  .choice { position: relative; display: block; cursor: pointer; }
+  .choice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .choice span {
+    display: block;
+    height: 100%;
+    padding: 12px;
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+  }
+  .choice input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+  .choice strong { display: block; font-size: 15px; }
+  .choice small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
+  .status {
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14px;
+    margin-top: 12px;
+  }
+  .status.ok { background: var(--ok-soft); color: var(--ok); }
+  .status.warn { background: var(--warn-soft); color: var(--warn); }
+  .status.ng { background: var(--ng-soft); color: var(--ng); }
+  .status.idle { background: var(--bg); color: var(--muted); }
+  .deadline-main { font-size: 18px; font-weight: 700; margin: 0; }
+  .deadline-sub { font-size: 14px; margin: 4px 0 0; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 420px; }
+  th, td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: right; vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  th:first-child, td:first-child { text-align: left; }
+  td small { display: block; color: var(--muted); font-size: 11px; }
+  td.na { color: var(--muted); }
+  .num { font-variant-numeric: tabular-nums; }
+  .buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  button {
+    min-height: 48px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:active { transform: scale(0.98); }
+  .copied { font-size: 13px; color: var(--ok); min-height: 20px; margin: 8px 0 0; }
+  footer { color: var(--muted); font-size: 12px; margin: 16px 0 24px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>宴会の仕込み量・卸発注締め切り</h1>
+  <p class="lead">人数とコースを選ぶと、食材ごとの仕込み量の目安と、卸への発注締め切りが分かります。</p>
+
+  <section class="card" aria-labelledby="h-booking">
+    <h2 id="h-booking">1. 予約内容</h2>
+
+    <div class="field">
+      <label class="label" for="hcNum">人数</label>
+      <div class="row">
+        <input type="number" id="hcNum" min="1" max="200" step="1" inputmode="numeric" value="20">
+        <span class="unit">名</span>
+      </div>
+      <input type="range" id="hcRange" min="1" max="200" step="1" value="20" aria-label="人数（スライダー）" style="margin-top:8px">
+      <div class="range-scale"><span>1名</span><span>100名</span><span>200名</span></div>
+    </div>
+
+    <div class="field">
+      <span class="label" id="courseLabel">コース</span>
+      <div class="choices" role="radiogroup" aria-labelledby="courseLabel">
+        <label class="choice">
+          <input type="radio" name="course" value="A">
+          <span><strong>気軽コース</strong><small>鍋・唐揚げ中心。仕込みが少なめ</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="course" value="B" checked>
+          <span><strong>おもてなしコース</strong><small>刺身と牛肉を入れた標準の構成</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="course" value="C">
+          <span><strong>特選コース</strong><small>牛肉・白身魚を多めに使用</small></span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label" for="eventDate">宴会の日時</label>
+      <div class="row">
+        <input type="date" id="eventDate" aria-label="宴会の日付" style="flex:1 1 0">
+        <input type="time" id="eventTime" value="18:00" aria-label="宴会の時間" style="flex:0 0 120px">
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-settings">
+    <h2 id="h-settings">2. 設定</h2>
+
+    <div class="field">
+      <label class="label" for="cutoff">卸の発注締め切り</label>
+      <select id="cutoff">
+        <option value="d3">3日前の 15:00</option>
+        <option value="d2" selected>2日前の 15:00</option>
+        <option value="d1">前日の 10:00</option>
+      </select>
+      <div class="hint">お取引先の締め切りに合わせて選んでください。</div>
+    </div>
+
+    <div class="field">
+      <label class="label" for="margin">仕込みの余裕率：<span class="num" id="marginOut">10</span>%</label>
+      <input type="range" id="margin" min="0" max="30" step="1" value="10">
+      <div class="range-scale"><span>0%</span><span>15%</span><span>30%</span></div>
+      <div class="hint">当日の追加注文や下処理のロスに備えて、上乗せする割合です。</div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-deadline" aria-live="polite">
+    <h2 id="h-deadline">3. 卸への発注締め切り</h2>
+    <p class="deadline-main" id="deadlineMain">—</p>
+    <p class="deadline-sub" id="deadlineSub"></p>
+    <div class="status idle" id="deadlineStatus">宴会の日付を入力すると、締め切りを計算します。</div>
+  </section>
+
+  <section class="card" aria-labelledby="h-prep">
+    <h2 id="h-prep">4. 食材ごとの仕込み量（目安）</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">食材</th>
+            <th scope="col">1名分</th>
+            <th scope="col">仕込み量</th>
+            <th scope="col">発注目安</th>
+          </tr>
+        </thead>
+        <tbody id="prepBody"></tbody>
+      </table>
+    </div>
+    <div class="hint" id="prepNote"></div>
+    <div class="buttons">
+      <button type="button" id="copyBtn" class="primary">結果をコピー</button>
+      <button type="button" id="resetBtn">入力をリセット</button>
+    </div>
+    <p class="copied" id="copiedMsg" role="status"></p>
+  </section>
+
+  <footer>
+    ※ 数値は目安です。実際の仕込みは、お客様の食べる量や仕入れ状況に合わせて調整してください。<br>
+    ※ 入力内容はこの端末のブラウザ内だけで計算され、外部に送信されることはありません。
+  </footer>
+</div>
+
+<script>
+  // コースごとの1名分の使用量（g、卵は個）
+  const COURSES = {
+    A: { name: '気軽コース' },
+    B: { name: 'おもてなしコース' },
+    C: { name: '特選コース' }
+  };
+
+  const INGREDIENTS = [
+    { name: '鶏もも肉',             unit: 'g', per: { A: 90,  B: 60,  C: 0   } },
+    { name: '牛もも肉（ステーキ用）', unit: 'g', per: { A: 0,   B: 80,  C: 120 } },
+    { name: '白身魚（刺身用）',       unit: 'g', per: { A: 0,   B: 60,  C: 80  } },
+    { name: '海老（むき身）',         unit: 'g', per: { A: 0,   B: 30,  C: 50  } },
+    { name: '旬の野菜',              unit: 'g', per: { A: 80,  B: 100, C: 100 } },
+    { name: '豆腐',                  unit: 'g', per: { A: 50,  B: 0,   C: 0   } },
+    { name: '米（〆のご飯）',          unit: 'g', per: { A: 80,  B: 80,  C: 60  } },
+    { name: '卵',                    unit: '個', per: { A: 0.5, B: 0.5, C: 1   } }
+  ];
+
+  // 卸の締め切り（宴会日の何日前、何時）
+  const CUTOFFS = {
+    d3: { days: 3, hh: 15, mm: 0, label: '3日前の 15:00' },
+    d2: { days: 2, hh: 15, mm: 0, label: '2日前の 15:00' },
+    d1: { days: 1, hh: 10, mm: 0, label: '前日の 10:00' }
+  };
+  const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
+
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2, '0');
+
+  function fmtAmount(v, unit) {
+    if (unit === '個') return Math.ceil(v) + ' 個';
+    if (v >= 1000) return (v / 1000).toLocaleString('ja-JP', { maximumFractionDigits: 2 }) + ' kg';
+    return Math.round(v).toLocaleString('ja-JP') + ' g';
+  }
+
+  function readHeadcount() {
+    const n = parseInt($('hcNum').value, 10);
+    if (isNaN(n)) return null;
+    return Math.min(200, Math.max(1, n));
+  }
+
+  function readCourse() {
+    const r = document.querySelector('input[name="course"]:checked');
+    return r ? r.value : 'B';
+  }
+
+  // 宴会日・時刻と締め切り設定から、締め切りの日時を求める
+  function computeDeadline() {
+    const d = $('eventDate').value; // YYYY-MM-DD
+    if (!d) return null;
+    const [y, m, day] = d.split('-').map(Number);
+    const c = CUTOFFS[$('cutoff').value];
+    const t = new Date(y, m - 1, day - c.days, c.hh, c.mm, 0, 0);
+    const ev = new Date(y, m - 1, day);
+    return { deadline: t, event: ev, cutoff: c };
+  }
+
+  function renderDeadline() {
+    const info = computeDeadline();
+    const box = $('deadlineStatus');
+    if (!info) {
+      $('deadlineMain').textContent = '—';
+      $('deadlineSub').textContent = '';
+      box.className = 'status idle';
+      box.textContent = '宴会の日付を入力すると、締め切りを計算します。';
+      return;
+    }
+    const t = info.deadline;
+    const dt = t.getFullYear() + '年' + (t.getMonth() + 1) + '月' + t.getDate() + '日（' + WEEK[t.getDay()] + '）' +
+               pad(t.getHours()) + ':' + pad(t.getMinutes());
+    $('deadlineMain').textContent = dt + ' 締め切り';
+    $('deadlineSub').textContent = '宴会日の' + info.cutoff.label + 'が締め切りです。';
+
+    const diff = t.getTime() - Date.now();
+    const hours = diff / 3600000;
+    if (diff < 0) {
+      box.className = 'status ng';
+      box.textContent = '締め切りを過ぎています。卸へ直接ご連絡ください。';
+    } else if (hours < 24) {
+      box.className = 'status warn';
+      box.textContent = 'あと' + Math.floor(hours) + '時間' + pad(Math.floor((hours % 1) * 60)) + '分で締め切りです。今すぐ発注を確認してください。';
+    } else {
+      const days = Math.floor(hours / 24);
+      const rem = Math.floor(hours % 24);
+      box.className = 'status ok';
+      box.textContent = 'あと' + days + '日' + rem + '時間で締め切りです。';
+    }
+  }
+
+  function computePrep() {
+    const hc = readHeadcount();
+    const course = readCourse();
+    const margin = parseInt($('margin').value, 10) / 100;
+    const rows = [];
+    if (hc === null) return { rows, hc, course, margin };
+    for (const ing of INGREDIENTS) {
+      const per = ing.per[course];
+      if (!per) { rows.push({ ing, per, na: true }); continue; }
+      const base = per * hc;
+      const prep = base * (1 + margin);
+      let order;
+      if (ing.unit === '個') {
+        order = Math.ceil(prep);
+      } else {
+        order = Math.ceil(prep / 500) * 500; // 発注は0.5kg単位で切り上げ
+      }
+      rows.push({ ing, per, prep: ing.unit === '個' ? Math.ceil(prep) : Math.ceil(prep / 10) * 10, order });
+    }
+    return { rows, hc, course, margin };
+  }
+
+  function renderPrep() {
+    const { rows, hc, course, margin } = computePrep();
+    const body = $('prepBody');
+    body.innerHTML = '';
+    if (hc === null) {
+      $('prepNote').textContent = '人数を入力してください。';
+      return;
+    }
+    for (const r of rows) {
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.textContent = r.ing.name;
+      const tdPer = document.createElement('td');
+      tdPer.className = 'num';
+      const tdPrep = document.createElement('td');
+      tdPrep.className = 'num';
+      const tdOrder = document.createElement('td');
+      tdOrder.className = 'num';
+      if (r.na) {
+        tdName.classList.add('na');
+        tdPer.textContent = '—';
+        tdPer.classList.add('na');
+        tdPrep.textContent = '使用なし';
+        tdPrep.classList.add('na');
+        tdOrder.textContent = '—';
+        tdOrder.classList.add('na');
+      } else {
+        tdPer.textContent = fmtAmount(r.per, r.ing.unit);
+        tdPrep.textContent = fmtAmount(r.prep, r.ing.unit);
+        tdOrder.textContent = fmtAmount(r.order, r.ing.unit);
+      }
+      tr.append(tdName, tdPer, tdPrep, tdOrder);
+      body.appendChild(tr);
+    }
+    $('prepNote').textContent =
+      COURSES[course].name + '・' + hc + '名・余裕率 ' + Math.round(margin * 100) +
+      '%で計算しています。発注目安は0.5kg単位（卵は1個単位）で切り上げた数です。';
+  }
+
+  function refreshHeadcountControls(source) {
+    const hc = readHeadcount();
+    if (hc === null) return;
+    if (source !== 'range') $('hcRange').value = hc;
+    if (source !== 'num') $('hcNum').value = hc;
+  }
+
+  function recalc() {
+    $('marginOut').textContent = $('margin').value;
+    renderPrep();
+    renderDeadline();
+  }
+
+  function buildSummary() {
+    const { rows, hc, course, margin } = computePrep();
+    const info = computeDeadline();
+    const lines = [];
+    lines.push('【宴会の仕込み量・発注メモ】');
+    lines.push('コース：' + COURSES[course].name + ' / 人数：' + (hc === null ? '未入力' : hc + '名'));
+    lines.push('余裕率：' + Math.round(margin * 100) + '%');
+    lines.push('宴会日時：' + ($('eventDate').value ? $('eventDate').value + ' ' + $('eventTime').value : '未入力'));
+    if (info) {
+      const t = info.deadline;
+      lines.push('卸への発注締め切り：' + t.getFullYear() + '/' + pad(t.getMonth() + 1) + '/' + pad(t.getDate()) + ' ' + pad(t.getHours()) + ':' + pad(t.getMinutes()));
+    }
+    lines.push('');
+    lines.push('食材 / 仕込み量 / 発注目安');
+    for (const r of rows) {
+      if (r.na) continue;
+      lines.push(r.ing.name + ' / ' + fmtAmount(r.prep, r.ing.unit) + ' / ' + fmtAmount(r.order, r.ing.unit));
+    }
+    return lines.join('\n');
+  }
+
+  async function copySummary() {
+    const text = buildSummary();
+    const msg = $('copiedMsg');
+    try {
+      await navigator.clipboard.writeText(text);
+      msg.textContent = 'コピーしました。メモやメールに貼り付けできます。';
+    } catch (e) {
+      // クリップボードが使えない環境では、テキストを選択できる状態で表示する
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+      document.body.removeChild(ta);
+      msg.textContent = ok ? 'コピーしました。' : 'コピーできませんでした。表示内容を手動で控えてください。';
+    }
+  }
+
+  function setDefaultDate() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    $('eventDate').value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function resetAll() {
+    $('hcNum').value = 20;
+    $('hcRange').value = 20;
+    document.querySelector('input[name="course"][value="B"]').checked = true;
+    $('margin').value = 10;
+    $('cutoff').value = 'd2';
+    $('eventTime').value = '18:00';
+    setDefaultDate();
+    $('copiedMsg').textContent = '';
+    recalc();
+  }
+
+  // イベント登録
+  $('hcNum').addEventListener('input', () => { refreshHeadcountControls('num'); recalc(); });
+  $('hcRange').addEventListener('input', () => { refreshHeadcountControls('range'); recalc(); });
+  document.querySelectorAll('input[name="course"]').forEach(el => el.addEventListener('change', recalc));
+  $('eventDate').addEventListener('input', recalc);
+  $('eventTime').addEventListener('input', recalc);
+  $('cutoff').addEventListener('change', recalc);
+  $('margin').addEventListener('input', recalc);
+  $('copyBtn').addEventListener('click', copySummary);
+  $('resetBtn').addEventListener('click', resetAll);
+
+  // 初期表示
+  setDefaultDate();
+  recalc();
+  // 締め切りまでの残り時間を1分ごとに更新
+  setInterval(renderDeadline, 60000);
+</script>
+</body>
+</html>
