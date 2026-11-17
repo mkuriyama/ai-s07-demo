@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>映画おすすめセレクター</title>
+<style>
+:root{
+  --bg:#f6f4f1;--card:#ffffff;--text:#1f1d1a;--muted:#6b6660;
+  --accent:#c2410c;--accent-2:#0f766e;--line:#e5e0d8;--chip:#efe9e1;--radius:14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15130f;--card:#211e19;--text:#f2eee8;--muted:#a59e95;
+    --accent:#fb923c;--accent-2:#2dd4bf;--line:#383229;--chip:#2e2a23;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15130f;--card:#211e19;--text:#f2eee8;--muted:#a59e95;
+  --accent:#fb923c;--accent-2:#2dd4bf;--line:#383229;--chip:#2e2a23;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  line-height:1.6;overflow-x:hidden;
+}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+header{padding:8px 0 4px}
+h1{font-size:1.5rem;margin:4px 0 6px}
+h2{font-size:1.1rem;margin:0 0 8px}
+.lead{margin:0;color:var(--muted);font-size:.9rem}
+.note{font-size:.8rem;color:var(--muted);margin:8px 0 0}
+.grid{display:grid;gap:16px;margin-top:16px}
+@media (min-width:820px){
+  .grid{grid-template-columns:360px 1fr;align-items:start}
+  .sticky{position:sticky;top:12px}
+}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;min-width:0}
+.field{margin-top:14px}
+.field:first-of-type{margin-top:0}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:.92rem;margin-bottom:6px}
+.val{color:var(--accent);font-weight:700;font-size:.92rem}
+input[type=text],input[type=number],input[type=url],select,textarea{
+  width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:10px;background:var(--bg);color:var(--text);
+}
+textarea{min-height:88px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--accent);margin:6px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;display:inline-flex;align-items:center;padding:7px 13px;border-radius:999px;
+  background:var(--chip);font-size:.88rem;cursor:pointer;user-select:none;border:1px solid transparent;min-height:36px}
+.chip input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.chip:has(input:checked){background:var(--accent);color:#fff;font-weight:600}
+.chip:has(input:focus-visible){outline:2px solid var(--accent-2);outline-offset:2px}
+.check{display:flex;align-items:center;gap:8px;font-size:.92rem;margin-top:14px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.btns{display:grid;gap:8px;margin-top:18px}
+.btn{font:inherit;font-weight:700;border-radius:10px;padding:12px 14px;min-height:46px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.teal{background:var(--accent-2);border-color:var(--accent-2);color:#fff}
+.btn.small{min-height:36px;padding:6px 12px;font-size:.85rem;font-weight:600;border-radius:999px}
+.btn:focus-visible{outline:2px solid var(--accent-2);outline-offset:2px}
+.results-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.count{color:var(--muted);font-size:.9rem}
+.list{display:grid;gap:12px}
+.film{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;min-width:0}
+.film.watched{opacity:.6}
+.film.top{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.film-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.title{font-weight:700;font-size:1.05rem;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:.84rem;overflow-wrap:anywhere}
+.match{font-weight:800;color:var(--accent-2);font-size:1.1rem;white-space:nowrap}
+.bar{height:8px;background:var(--chip);border-radius:999px;overflow:hidden;margin:10px 0 8px}
+.bar>span{display:block;height:100%;background:var(--accent-2);border-radius:999px;transition:width .3s}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tag{font-size:.78rem;padding:2px 9px;border-radius:999px;background:var(--chip);color:var(--text)}
+.tag.mood{background:transparent;border:1px solid var(--accent-2);color:var(--accent-2)}
+.syn{font-size:.9rem;margin:6px 0 0;overflow-wrap:anywhere}
+.reasons{font-size:.84rem;color:var(--muted);margin:6px 0 0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.empty{text-align:center;color:var(--muted);padding:36px 8px;border:1px dashed var(--line);border-radius:var(--radius)}
+.pick{border:2px solid var(--accent);border-radius:var(--radius);padding:4px;margin-bottom:12px}
+.pick-label{font-size:.8rem;font-weight:700;color:var(--accent);padding:6px 10px 0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.two{grid-template-columns:1fr}}
+details{margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:4px 16px}
+summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:44px}
+details[open] summary{border-bottom:1px solid var(--line);margin-bottom:12px}
+.custom-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.custom-item:last-child{border-bottom:0}
+.msg{font-size:.9rem;color:var(--accent-2);min-height:1.4em;margin:8px 0 0}
+.msg.err{color:var(--accent)}
+.foot{color:var(--muted);font-size:.8rem;text-align:center;padding:24px 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎬 映画おすすめセレクター</h1>
+    <p class="lead">気分・ジャンル・上映時間・評価から、あなた向けの作品を並べます。</p>
+    <p class="note">※この画面の作品は説明用のサンプルです。実際の最新作は下の「作品を追加」から入力できます。データは外部に送信されません。</p>
+  </header>
+
+  <div class="grid">
+    <!-- 条件入力 -->
+    <section class="panel sticky" aria-labelledby="cond-title">
+      <h2 id="cond-title">好みを入力</h2>
+
+      <div class="field">
+        <div class="lbl"><label for="kw">キーワード</label></div>
+        <input type="text" id="kw" placeholder="タイトル・監督・あらすじ" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <div class="lbl"><span>好きなジャンル（複数可）</span></div>
+        <div class="chips" id="genreFilter"></div>
+      </div>
+
+      <div class="field">
+        <div class="lbl"><label for="mood">今の気分</label></div>
+        <select id="mood"></select>
+      </div>
+
+      <div class="field">
+        <div class="lbl"><label for="runtime">上映時間の上限</label><span class="val" id="runtimeOut"></span></div>
+        <input type="range" id="runtime" min="60" max="200" step="5" value="150">
+      </div>
+
+      <div class="field">
+        <div class="lbl"><label for="rating">評価の下限</label><span class="val" id="ratingOut"></span></div>
+        <input type="range" id="rating" min="0" max="10" step="0.1" value="6.5">
+      </div>
+
+      <div class="field">
+        <div class="lbl"><label for="year">公開年の下限</label><span class="val" id="yearOut"></span></div>
+        <input type="range" id="year" min="2020" max="2026" step="1" value="2024">
+      </div>
+
+      <label class="check">
+        <input type="checkbox" id="excl" checked>
+        見た映画を候補から外す
+      </label>
+
+      <div class="btns">
+        <button class="btn primary" id="search" type="button">おすすめを探す</button>
+        <button class="btn teal" id="random" type="button">ランダムに1本選ぶ</button>
+        <button class="btn" id="reset" type="button">条件をリセット</button>
+      </div>
+    </section>
+
+    <!-- 結果 -->
+    <section aria-labelledby="res-title">
+      <div class="results-head">
+        <h2 id="res-title">おすすめ</h2>
+        <span class="count" id="count" aria-live="polite"></span>
+      </div>
+      <div id="pick"></div>
+      <div class="list" id="results"></div>
+    </section>
+  </div>
+
+  <!-- 作品追加 -->
+  <details>
+    <summary>作品を追加・管理（最新作の入力はこちら）</summary>
+    <form id="addForm" autocomplete="off" novalidate>
+      <div class="two">
+        <div class="field">
+          <label class="lbl" for="f-title">タイトル *</label>
+          <input type="text" id="f-title" required maxlength="60">
+        </div>
+        <div class="field">
+          <label class="lbl" for="f-director">監督</label>
+          <input type="text" id="f-director" maxlength="40">
+        </div>
+        <div class="field">
+          <label class="lbl" for="f-year">公開年</label>
+          <input type="number" id="f-year" min="1950" max="2030" value="2026">
+        </div>
+        <div class="field">
+          <label class="lbl" for="f-runtime">上映時間（分）</label>
+          <input type="number" id="f-runtime" min="1" max="400" value="110">
+        </div>
+        <div class="field">
+          <label class="lbl" for="f-rating">評価（0〜10）</label>
+          <input type="number" id="f-rating" min="0" max="10" step="0.1" value="7.0">
+        </div>
+        <div class="field">
+          <label class="lbl" for="f-mood">気分</label>
+          <select id="f-mood"></select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="lbl"><span>ジャンル（1つ以上）</span></div>
+        <div class="chips" id="f-genres"></div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="f-syn">あらすじ（短い紹介）</label>
+        <textarea id="f-syn" maxlength="300"></textarea>
+      </div>
+      <div class="btns" style="grid-template-columns:1fr">
+        <button class="btn primary" type="submit">この作品を追加</button>
+      </div>
+      <p class="msg" id="addMsg" role="status"></p>
+    </form>
+
+    <h2 style="margin-top:18px">追加した作品</h2>
+    <div id="customList"><p class="meta">まだ追加した作品はありません。</p></div>
+    <div style="margin:12px 0 16px"><button class="btn small" id="clearWatched" type="button">「見た」の記録をすべて消す</button></div>
+  </details>
+
+  <p class="foot">映画おすすめセレクター ・ 条件は入力するたびに自動で更新されます</p>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const GENRES = ['ドラマ','SF','アクション','ロマンス','ミステリー','アニメ','アドベンチャー','ファンタジー','ドキュメンタリー','コメディ','ホラー'];
+  const MOODS = ['静か','わくわく','ドキドキ','ほのぼの','切ない','笑いたい'];
+
+  // 説明用のサンプル作品（架空の作品・人物）。実在作品の情報ではありません。
+  const SAMPLE = [
+    { id:'s1', title:'夜明けの鉄道', year:2026, runtime:118, rating:8.1, genres:['ドラマ'], mood:'静か', director:'サンプル監督A', synopsis:'早朝の終電を舞台に、すれ違う人々の小さな決断を描く。' },
+    { id:'s2', title:'ネオ・サーキット', year:2026, runtime:132, rating:7.4, genres:['SF','アクション'], mood:'わくわく', director:'サンプル監督B', synopsis:'未来の都市で、速さだけを頼りに走る若者たちの物語。' },
+    { id:'s3', title:'雨のあとで', year:2025, runtime:105, rating:7.9, genres:['ロマンス','ドラマ'], mood:'切ない', director:'サンプル監督C', synopsis:'梅雨の喫茶店で再会した二人が、止まっていた時間を動かす。' },
+    { id:'s4', title:'月下の推理', year:2026, runtime:121, rating:8.3, genres:['ミステリー'], mood:'ドキドキ', director:'サンプル監督D', synopsis:'満月の夜に起きた一件の事件を、古い図書館の司書が解き明かす。' },
+    { id:'s5', title:'小さな宇宙船', year:2025, runtime:96, rating:7.6, genres:['アニメ','ファンタジー'], mood:'ほのぼの', director:'サンプル監督E', synopsis:'段ボールで作った宇宙船で、子どもたちが月を目指す夏休み。' },
+    { id:'s6', title:'砂漠の約束', year:2026, runtime:140, rating:7.0, genres:['アドベンチャー'], mood:'わくわく', director:'サンプル監督F', synopsis:'地図の欠けた一枚を手に、旅人が砂漠に隠された水源を探す。' },
+    { id:'s7', title:'森の図書館', year:2026, runtime:112, rating:8.0, genres:['ファンタジー','アニメ'], mood:'ほのぼの', director:'サンプル監督G', synopsis:'森の奥の図書館で、本の中の登場人物と話せる少女の話。' },
+    { id:'s8', title:'最後のレコード', year:2024, runtime:98, rating:8.5, genres:['ドキュメンタリー'], mood:'静か', director:'サンプル監督H', synopsis:'閉店する町の小さなレコード店と、店主が集めた音の記憶。' },
+    { id:'s9', title:'真夜中のキッチン', year:2026, runtime:102, rating:6.9, genres:['コメディ'], mood:'笑いたい', director:'サンプル監督I', synopsis:'深夜営業のラーメン店に、次々と個性的な客が現れる一夜。' },
+    { id:'s10', title:'深海の声', year:2025, runtime:110, rating:7.2, genres:['ホラー','ミステリー'], mood:'ドキドキ', director:'サンプル監督J', synopsis:'海底基地で聞こえ始めた謎の音声。調査隊の一人が記録をたどる。' }
+  ];
+
+  // ---- 保存（失敗しても動くように try/catch） ----
+  const store = {
+    get(key, def) {
+      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch (e) { return def; }
+    },
+    set(key, val) {
+      try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* 保存できない環境では無視 */ }
+    }
+  };
+  let custom = store.get('film-app2-custom', []);
+  let watched = new Set(store.get('film-app2-watched', []));
+  let pickedMode = false;
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const allFilms = () => [...SAMPLE, ...custom];
+
+  // ---- 初期化 ----
+  function buildChips(container, name) {
+    container.innerHTML = GENRES.map(g =>
+      `<label class="chip"><input type="checkbox" name="${name}" value="${esc(g)}"><span>${esc(g)}</span></label>`
+    ).join('');
+  }
+  function buildMoodOptions(sel, withAny) {
+    sel.innerHTML = (withAny ? '<option value="any">指定しない</option>' : '') +
+      MOODS.map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  }
+  buildChips($('genreFilter'), 'gf');
+  buildChips($('f-genres'), 'fg');
+  buildMoodOptions($('mood'), true);
+  buildMoodOptions($('f-mood'), false);
+
+  // ---- 条件の読み取りと表示 ----
+  function readParams() {
+    return {
+      keyword: $('kw').value.trim(),
+      genres: [...document.querySelectorAll('input[name="gf"]:checked')].map(i => i.value),
+      mood: $('mood').value,
+      maxRuntime: +$('runtime').value,
+      minRating: +$('rating').value,
+      minYear: +$('year').value,
+      excludeWatched: $('excl').checked
+    };
+  }
+  function updateLabels() {
+    $('runtimeOut').textContent = $('runtime').value + '分以内';
+    $('ratingOut').textContent = (+$('rating').value).toFixed(1) + '以上';
+    $('yearOut').textContent = $('year').value + '年以降';
+  }
+
+  // ---- 採点：条件に合わなければ null、合えば一致度(%)と理由 ----
+  function evaluate(f, p) {
+    if (f.runtime > p.maxRuntime) return null;
+    if (f.rating < p.minRating) return null;
+    if (f.year < p.minYear) return null;
+    if (p.excludeWatched && watched.has(f.id)) return null;
+    if (p.keyword) {
+      const hay = [f.title, f.director, f.synopsis, ...f.genres].join(' ').toLowerCase();
+      if (!hay.includes(p.keyword.toLowerCase())) return null;
+    }
+    let score = 0, max = 0;
+    const reasons = [];
+    if (p.genres.length) {
+      max += 40;
+      const hit = f.genres.filter(g => p.genres.includes(g));
+      score += 40 * hit.length / p.genres.length;
+      if (hit.length) reasons.push('ジャンル一致：' + hit.join('・'));
+    }
+    if (p.mood !== 'any') {
+      max += 25;
+      if (f.mood === p.mood) { score += 25; reasons.push('気分「' + p.mood + '」に合う'); }
+    }
+    max += 20;
+    score += 20 * f.rating / 10;
+    if (f.rating >= 8) reasons.push('評価が高い');
+    max += 15;
+    const recency = Math.min(1, Math.max(0, (f.year - 2023) / 3));
+    score += 15 * recency;
+    if (f.year >= 2025) reasons.push('新しい作品');
+    return { f, pct: Math.round(score / max * 100), reasons };
+  }
+
+  function card(r, isTop) {
+    const f = r.f;
+    const isWatched = watched.has(f.id);
+    const moodTag = f.mood ? `<span class="tag mood">${esc(f.mood)}</span>` : '';
+    const genreTags = f.genres.map(g => `<span class="tag">${esc(g)}</span>`).join('');
+    return `
+      <article class="film${isWatched ? ' watched' : ''}${isTop ? ' top' : ''}" aria-label="${esc(f.title)}">
+        <div class="film-head">
+          <div style="min-width:0">
+            <div class="title">${esc(f.title)}</div>
+            <div class="meta">${esc(f.year)}年 ・ ${esc(f.runtime)}分 ・ ★${esc(f.rating.toFixed(1))}${f.director ? ' ・ ' + esc(f.director) : ''}</div>
+          </div>
+          <div class="match">${r.pct}%</div>
+        </div>
+        <div class="bar" role="img" aria-label="一致度 ${r.pct}%"><span style="width:${r.pct}%"></span></div>
+        <div class="tags">${moodTag}${genreTags}</div>
+        ${f.synopsis ? `<p class="syn">${esc(f.synopsis)}</p>` : ''}
+        ${r.reasons.length ? `<p class="reasons">理由：${r.reasons.map(esc).join(' / ')}</p>` : ''}
+        <div class="actions">
+          <button class="btn small" type="button" data-watch="${esc(f.id)}">${isWatched ? '見た（取り消す）' : '見た'}</button>
+        </div>
+      </article>`;
+  }
+
+  // ---- 結果の描画 ----
+  function render() {
+    const p = readParams();
+    const list = allFilms()
+      .map(f => evaluate(f, p))
+      .filter(Boolean)
+      .sort((a, b) => b.pct - a.pct || b.f.rating - a.f.rating);
+
+    $('count').textContent = list.length ? `${list.length}件が条件に合います` : '';
+
+    if (pickedMode) {
+      // ランダム選択モード：候補から1本
+      if (!list.length) {
+        $('pick').innerHTML = '';
+        $('results').innerHTML = '<div class="empty">条件に合う作品がありません。条件を緩めてみてください。</div>';
+        pickedMode = false;
+        return;
+      }
+      const one = list[Math.floor(Math.random() * list.length)];
+      $('pick').innerHTML = `<div class="pick"><div class="pick-label">🎲 今日の1本</div>${card(one, true)}</div>`;
+      $('results').innerHTML = '';
+      $('count').textContent = `${list.length}件の中から選びました`;
+      pickedMode = false;
+      return;
+    }
+
+    $('pick').innerHTML = '';
+    if (!list.length) {
+      $('results').innerHTML = '<div class="empty">条件に合う作品がありません。<br>評価や上映時間の条件を緩めるか、「条件をリセット」を試してください。</div>';
+      return;
+    }
+    $('results').innerHTML = list.slice(0, 20).map((r, i) => card(r, i === 0)).join('');
+  }
+
+  // ---- 作品の追加・管理 ----
+  function renderCustom() {
+    const box = $('customList');
+    if (!custom.length) {
+      box.innerHTML = '<p class="meta">まだ追加した作品はありません。</p>';
+      return;
+    }
+    box.innerHTML = custom.map(f =>
+      `<div class="custom-item"><span>${esc(f.title)}（${esc(f.year)}年）</span>
+       <button class="btn small" type="button" data-del="${esc(f.id)}">削除</button></div>`
+    ).join('');
+  }
+
+  $('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const title = $('f-title').value.trim();
+    const genres = [...document.querySelectorAll('input[name="fg"]:checked')].map(i => i.value);
+    const year = parseInt($('f-year').value, 10);
+    const runtime = parseInt($('f-runtime').value, 10);
+    const rating = parseFloat($('f-rating').value);
+    const msg = $('addMsg');
+
+    if (!title) { msg.className = 'msg err'; msg.textContent = 'タイトルを入力してください。'; return; }
+    if (!genres.length) { msg.className = 'msg err'; msg.textContent = 'ジャンルを1つ以上選んでください。'; return; }
+    if (!(year >= 1950 && year <= 2030) || !(runtime > 0) || !(rating >= 0 && rating <= 10)) {
+      msg.className = 'msg err'; msg.textContent = '公開年・上映時間・評価の値を確認してください。'; return;
+    }
+
+    custom.push({
+      id: 'c' + Date.now(),
+      title, year, runtime, rating: Math.round(rating * 10) / 10, genres,
+      mood: $('f-mood').value,
+      director: $('f-director').value.trim(),
+      synopsis: $('f-syn').value.trim()
+    });
+    store.set('film-app2-custom', custom);
+    msg.className = 'msg';
+    msg.textContent = `「${title}」を追加しました。`;
+    e.target.reset();
+    $('f-year').value = '2026'; $('f-runtime').value = '110'; $('f-rating').value = '7.0';
+    document.querySelectorAll('input[name="fg"]').forEach(i => i.checked = false);
+    renderCustom();
+    render();
+  });
+
+  // ---- クリックの委譲（見た・削除） ----
+  document.addEventListener('click', e => {
+    const w = e.target.closest('[data-watch]');
+    if (w) {
+      const id = w.getAttribute('data-watch');
+      if (watched.has(id)) watched.delete(id); else watched.add(id);
+      store.set('film-app2-watched', [...watched]);
+      render();
+      return;
+    }
+    const d = e.target.closest('[data-del]');
+    if (d) {
+      const id = d.getAttribute('data-del');
+      custom = custom.filter(f => f.id !== id);
+      watched.delete(id);
+      store.set('film-app2-custom', custom);
+      store.set('film-app2-watched', [...watched]);
+      renderCustom();
+      render();
+    }
+  });
+
+  $('clearWatched').addEventListener('click', () => {
+    watched = new Set();
+    store.set('film-app2-watched', []);
+    render();
+  });
+
+  // ---- 操作ボタン ----
+  $('search').addEventListener('click', () => { pickedMode = false; render(); });
+  $('random').addEventListener('click', () => { pickedMode = true; render(); });
+  $('reset').addEventListener('click', () => {
+    $('kw').value = '';
+    document.querySelectorAll('input[name="gf"]').forEach(i => i.checked = false);
+    $('mood').value = 'any';
+    $('runtime').value = 150;
+    $('rating').value = 6.5;
+    $('year').value = 2024;
+    $('excl').checked = true;
+    updateLabels();
+    pickedMode = false;
+    render();
+  });
+
+  // 条件を変えたら自動更新
+  ['kw', 'mood', 'runtime', 'rating', 'year', 'excl'].forEach(id => {
+    $(id).addEventListener('input', () => { updateLabels(); pickedMode = false; render(); });
+    $(id).addEventListener('change', () => { updateLabels(); pickedMode = false; render(); });
+  });
+  document.querySelectorAll('input[name="gf"]').forEach(i =>
+    i.addEventListener('change', () => { pickedMode = false; render(); })
+  );
+
+  // ---- 起動 ----
+  $('mood').value = 'any';
+  updateLabels();
+  renderCustom();
+  render();
+})();
+</script>
+</body>
+</html>
